@@ -2,7 +2,9 @@ import requests
 import base64
 import time
 import re
-import os
+
+BAN_LIST = ['\\', '/', ':', '*', '?', '"', "<", ">", "|"]
+
 
 def get(url: str) -> str:
     headers = {
@@ -27,7 +29,7 @@ def get_bytes(hcno: str) -> bytes:
         time.sleep(1)
 
         text += get(url)
-        print(f"正在下载中{i*10}%")
+        print(f"正在下载中{i * 10}%")
     pdf_bytes = base64.standard_b64decode(text)
     return pdf_bytes
 
@@ -79,7 +81,10 @@ if __name__ == '__main__':
 
     hcno = get_hcno(url)
     g_name, c_name = get_pdf_name(url)
-    pdf_name = f"{g_name}({c_name})".replace("/", "")
+    pdf_name = f"{g_name}({c_name})"
+
+    for b in BAN_LIST:
+        pdf_name = pdf_name.replace(b, " ")
 
     pdf_bytes = get_bytes(hcno)
 
