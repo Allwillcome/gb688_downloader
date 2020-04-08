@@ -5,6 +5,8 @@
 国标的下载逻辑参考了[lzghzr](https://github.com/lzghzr/TampermonkeyJS/blob/master/GBdownload/GBdownload.user.js)的油猴插件
 
 # 示例
+## 下载国标
+运行`command.py`或者下载封装的exe按照提示即可使用
 ## 下载地方标准
 ### 采用搜索之后进行批量下载
     t = 'dbba'
@@ -172,4 +174,5 @@
 | 消防救援                 	|
 | 减灾救灾与综合性应急管理 	|
 # TODO
-- [ ] 支持行业标准、地方标准及其他标准的下载
+- [x] 支持行业标准、地方标准的下载
+- [ ] 支持使用命令行来进行下载
