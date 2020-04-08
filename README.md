@@ -7,11 +7,10 @@
 # 示例
 ## 下载地方标准
 ### 采用搜索之后进行批量下载
-    data = search('政务云工程评价指标体系及方法', t='dbba')
-    name = f'{data['records'][0]['code']}(政务云工程评价指标体系及方法)'
-    for b in BAN_LIST:
-        name = name.replace(b, " ")
-    download(pk=data['records'][0]['pk], name=name)
+    t = 'dbba'
+    data = search('政务云工程评价指标体系及方法', t=t)
+    name = f'{data["records"][0]["code"]}({data["records"][0]["chName"]}'
+    download(pk=data['records'][0]['pk'], name=name, t=t)
 
 
 # `ministry`以及`industry`的代号

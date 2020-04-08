@@ -1,4 +1,4 @@
-from standard.gb_downloader import *
+from standard.gb_download import *
 
 
 def main():
