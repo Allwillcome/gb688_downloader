@@ -1,9 +1,10 @@
-import requests
 import base64
-import time
 import re
+import time
 
-BAN_LIST = ['\\', '/', ':', '*', '?', '"', "<", ">", "|"]
+import requests
+
+from .config import BAN_LIST
 
 
 def get(url: str) -> str:
@@ -20,6 +21,11 @@ def get(url: str) -> str:
 
 
 def get_bytes(hcno: str) -> bytes:
+    """
+    这部分代码可以在对 http://openstd.samr.gov.cn/bzgk/gb/index 网站的手机版预览模式下抓包获得
+    :param hcno:
+    :return:
+    """
     text = ""
     for i in range(0, 10):
         if i == 0:

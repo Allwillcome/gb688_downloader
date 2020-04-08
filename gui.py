@@ -1,5 +1,5 @@
 from gooey import Gooey, GooeyParser
-from gb_downloader import download
+from standard.gb_downloader import download
 
 
 # TODO:
