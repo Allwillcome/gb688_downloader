@@ -4,6 +4,7 @@ from .config import BAN_LIST
 import requests
 
 
+# TODO: 参考，不提供参考的文献：http://hbba.sacinfo.org.cn/stdDetail/068de47502bf8ba5e0bc3e3d27c75eef
 def download(pk, t, name, path='.'):
     if t not in {'hbba', 'dbba'}:
         raise Exception("t参数错误，请查询文档")
@@ -15,6 +16,7 @@ def download(pk, t, name, path='.'):
     print("下载中")
     with open(Path(path) / f'{name}.pdf', 'wb') as f:
         f.write(r.content)
+    return Path(path) / f'{name}.pdf'
 
 
 def search(key, t: str, status='', pubdate='', ministry='', industry: str = '', current: int = 1, size: int = 15):
