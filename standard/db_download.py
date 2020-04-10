@@ -7,6 +7,7 @@ import requests
 # TODO: 参考，不提供参考的文献：http://hbba.sacinfo.org.cn/stdDetail/068de47502bf8ba5e0bc3e3d27c75eef
 def download(pk, t, name, path='.'):
     if t not in {'hbba', 'dbba'}:
+        input("参数错误，请查询文档")
         raise Exception("t参数错误，请查询文档")
     for b in BAN_LIST:
         name = name.replace(b, " ")
@@ -14,8 +15,8 @@ def download(pk, t, name, path='.'):
     url = f'http://{t}.sacinfo.org.cn/attachment/downloadStdFile?pk={pk}'
     r = requests.get(url)
     if len(r.content) == 0:
+        input("该文件无法下载")
         raise Exception("该文件无法下载")
-    print(len(r.content))
     with open(Path(path) / f'{name}.pdf', 'wb') as f:
         f.write(r.content)
     return Path(path) / f'{name}.pdf'
