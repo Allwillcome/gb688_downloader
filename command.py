@@ -1,26 +1,47 @@
 from standard.gb_download import is_download, get_hcno, get_pdf_name, BAN_LIST, get_bytes
 from standard.db_download import search, download
 from prettytable import PrettyTable
+from colorama import Fore, init
+
+init(autoreset=True)
 
 
-def download_hgb(t, text):
-    data = search(text, t=t)
-    # TODO: 需要对翻页进行处理
+def download_hgb(t, text, page=1, size=15):
+    data = search(text, t=t, current=page, size=size)
     pages = data['pages']
-    size = data['total']
+    total = data['total']
 
+    print(f"\n本次搜索共有{pages}页，目前是第{page}页，共{total}项")
     table = PrettyTable(['编号', '标准号', '名称'])
-    for index, d in enumerate(data['records']):
+    for index, d in enumerate(data['records'], start=1):
         table.add_row([index, d['code'], d['chName']])
-    print(table)
 
-    num = int(input("请输入标准的编号来进行下载："))  # 这里需要对其进行检测，以防不是int
-    if num > len(data['records']):
+    if len(data['records']) == 0:
+        print(f"{Fore.YELLOW}没有找到匹配的记录")
+    else:
+        print(table)
+
+    num = int(input("请输入标准的编号来进行下载(向下翻页请输入-1，向上请输入0)："))  # 这里需要对其进行检测，以防不是int
+    if len(data['records']) < num < -1:
         input("输入错误，退出")
         exit()
-    path = download(pk=data['records'][num]['pk'],
-                    name=f'{data["records"][num]["code"]}({data["records"][num]["chName"]}', t=t)
-    return path
+    elif num == -1:
+        if page * size > total:
+            print(f"{Fore.YELLOW}已经是最后一页了")
+        else:
+            page += 1
+        download_hgb(t, text, page, size)
+    elif num == 0:
+        if page == 1:
+            print(f"{Fore.YELLOW}已经是第一页了")
+        else:
+            page -= 1
+        download_hgb(t, text, page, size)
+    else:
+        path = download(pk=data['records'][num - 1]['pk'],
+                        name=f'{data["records"][num - 1]["code"]}（{data["records"][num - 1]["chName"]}）', t=t)
+        print("下载成功")
+        return path
 
 
 def main():
@@ -54,9 +75,8 @@ def main():
         text = input("请输入标准关键字来进行搜索，比如说标准名或标准号：")
         path = download_hgb('dbba', text)
     elif standard_type != "gb" or standard_type != "hy" or standard_type != "df":
-        print("输入的代号错误")
+        print(f"{Fore.RED}输入的代号错误")
 
-    print("下载成功")
     input("按任意键退出...")
 
 

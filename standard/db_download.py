@@ -10,10 +10,12 @@ def download(pk, t, name, path='.'):
         raise Exception("t参数错误，请查询文档")
     for b in BAN_LIST:
         name = name.replace(b, " ")
-
+    print("下载中...")
     url = f'http://{t}.sacinfo.org.cn/attachment/downloadStdFile?pk={pk}'
     r = requests.get(url)
-    print("下载中")
+    if len(r.content) == 0:
+        raise Exception("该文件无法下载")
+    print(len(r.content))
     with open(Path(path) / f'{name}.pdf', 'wb') as f:
         f.write(r.content)
     return Path(path) / f'{name}.pdf'

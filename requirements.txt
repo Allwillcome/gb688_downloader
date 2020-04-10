@@ -10,3 +10,7 @@ requests==2.23.0
 six==1.14.0
 urllib3==1.25.8
 wxPython==4.0.7.post2
+
+setuptools~=40.8.0
+prettytable~=0.7.2
+colorama~=0.4.3
