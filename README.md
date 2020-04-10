@@ -6,7 +6,7 @@
 
 # 示例
 ## 下载国标
-运行`command.py`或者下载封装的exe按照提示即可使用
+运行`command.py`或者下载封装的[exe](https://github.com/renmu123/gb688_downloader/releases)（只在win10进行过测试）按照提示即可使用
 ## 下载地方标准
 ### 采用搜索之后进行批量下载
     t = 'dbba'
