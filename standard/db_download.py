@@ -2,10 +2,11 @@ from pathlib import Path
 from .config import BAN_LIST
 
 import requests
+from typing import Union
 
 
 # TODO: 参考，不提供参考的文献：http://hbba.sacinfo.org.cn/stdDetail/068de47502bf8ba5e0bc3e3d27c75eef
-def download(pk, t, name, path='.'):
+def download(pk: str, t: str, name: str, path: Union[str, Path] = '.') -> Path:
     if t not in {'hbba', 'dbba'}:
         input("参数错误，请查询文档")
         raise Exception("t参数错误，请查询文档")
@@ -22,7 +23,8 @@ def download(pk, t, name, path='.'):
     return Path(path) / f'{name}.pdf'
 
 
-def search(key, t: str, status='', pubdate='', ministry='', industry: str = '', current: int = 1, size: int = 15):
+def search(key, t: str, status: str = '', pubdate: str = '', ministry: str = '', industry: str = '', current: int = 1,
+           size: int = 15) -> dict:
     """这个函数用来对地方标准进行搜索，当值为空时，则默认为全部
 
     :param key: 搜索关键词

@@ -6,7 +6,7 @@ from colorama import Fore, init
 init(autoreset=True)
 
 
-def download_hdb(t, text, page=1, size=15):
+def download_hdb(t: str, text: str, page: int = 1, size: int = 15):
     data = search(text, t=t, current=page, size=size)
     pages = data['pages']
     total = data['total']
@@ -44,7 +44,7 @@ def download_hdb(t, text, page=1, size=15):
         return path
 
 
-def download_gb(url):
+def download_gb(url: str):
     if not is_download(url):
         input("这个文件展示不支持下载，原页面没有在线预览，请自行打开网页进行查询")
         raise Exception("这个文件展示不支持下载，原页面没有在线预览，请自行打开网页进行查询")
