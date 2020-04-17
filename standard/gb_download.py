@@ -71,6 +71,9 @@ def get_pdf_name(url: str) -> tuple:
     """
     r = requests.get(url)
     g_name = re.findall(r"标准号：(.*?) </h1></td>", r.text)
+    if not g_name:
+        g_name = re.findall(r"标准号：(.*?) <span", r.text)
+
     c_name = re.findall(r"中文标准名称：<b>(.*?)</b></td>", r.text)
     if len(g_name) == 0 or len(c_name) == 0:
         input("未找到标准号和标准名称")
