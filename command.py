@@ -38,9 +38,15 @@ def download_hdb(t: str, text: str, page: int = 1, size: int = 15):
             page -= 1
         download_hdb(t, text, page, size)
     else:
-        path = download(pk=data['records'][num - 1]['pk'],
-                        name=f'{data["records"][num - 1]["code"]}（{data["records"][num - 1]["chName"]}）', t=t)
-        print("下载成功")
+        try:
+            path = download(pk=data['records'][num - 1]['pk'],
+                            name=f'{data["records"][num - 1]["code"]}（{data["records"][num - 1]["chName"]}）', t=t)
+            print("下载成功")
+            download_hdb(t, text, page, size)
+        except Exception:
+            print(f"{Fore.YELLOW}该文件无法下载")
+            input("按任意键继续下载...")
+            download_hdb(t, text, page, size)
         return path
 
 

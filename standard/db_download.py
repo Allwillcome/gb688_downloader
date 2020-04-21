@@ -16,7 +16,6 @@ def download(pk: str, t: str, name: str, path: Union[str, Path] = '.') -> Path:
     url = f'http://{t}.sacinfo.org.cn/attachment/downloadStdFile?pk={pk}'
     r = requests.get(url)
     if len(r.content) == 0:
-        input("该文件无法下载")
         raise Exception("该文件无法下载")
     with open(Path(path) / f'{name}.pdf', 'wb') as f:
         f.write(r.content)
