@@ -44,7 +44,7 @@ def download_hdb(t: str, text: str, page: int = 1, size: int = 15):
             print("下载成功")
             download_hdb(t, text, page, size)
         except Exception:
-            print(f"{Fore.YELLOW}该文件无法下载")
+            print(f"{Fore.YELLOW}该文件源网页不支持下载")
             input("按任意键继续下载...")
             download_hdb(t, text, page, size)
         return path
