@@ -6,20 +6,34 @@ from typing import Union
 
 
 # TODO: 参考，不提供参考的文献：http://hbba.sacinfo.org.cn/stdDetail/068de47502bf8ba5e0bc3e3d27c75eef
-def download(pk: str, t: str, name: str, path: Union[str, Path] = '.') -> Path:
+def download(pk: str, t: str, name: str, dir: Union[str, Path] = '.') -> Path:
     if t not in {'hbba', 'dbba'}:
         input("参数错误，请查询文档")
         raise Exception("t参数错误，请查询文档")
+
     for b in BAN_LIST:
         name = name.replace(b, " ")
+
+    path = Path(dir)
+    if not path.exists():
+        try:
+            path.mkdir()
+        except FileNotFoundError:
+            print("请查看该文件的父目录是否已经被创建")
+
+    file_path = path / f'{name}.pdf'
+
     print("下载中...")
     url = f'http://{t}.sacinfo.org.cn/attachment/downloadStdFile?pk={pk}'
     r = requests.get(url)
+
     if len(r.content) == 0:
         raise Exception("该文件无法下载")
-    with open(Path(path) / f'{name}.pdf', 'wb') as f:
+
+    with open(file_path, 'wb') as f:
         f.write(r.content)
-    return Path(path) / f'{name}.pdf'
+
+    return file_path
 
 
 def search(key, t: str, status: str = '', pubdate: str = '', ministry: str = '', industry: str = '', current: int = 1,

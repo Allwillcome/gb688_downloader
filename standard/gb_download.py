@@ -1,6 +1,8 @@
 import base64
 import re
 import time
+from datetime import datetime
+from pathlib import Path
 
 import requests
 
@@ -81,7 +83,7 @@ def get_pdf_name(url: str) -> tuple:
     return g_name[0], c_name[0]
 
 
-def download(url: str):
+def download(url: str, dir):
     if not is_download(url):
         raise Exception("这个文件展示不支持下载，原页面没有在线预览，请自行打开网页进行查询")
 
@@ -94,10 +96,68 @@ def download(url: str):
 
     pdf_bytes = get_bytes(hcno)
 
-    path = f"{pdf_name}.pdf"
-    with open(path, "wb") as f:
+    path = Path(dir)
+    if not path.exists():
+        try:
+            path.mkdir()
+        except FileNotFoundError:
+            print("请查看该文件的父目录是否已经被创建")
+
+    file_path = path / f"{pdf_name}.pdf"
+    with open(file_path, "wb") as f:
         f.write(pdf_bytes)
-    print("下载成功")
+
+    print(f"{pdf_name} 下载成功")
 
     return path
 
+
+def search(text, page=1, size=10, sort_name='circulation_date', sort_type='desc'):
+    """国标的下载
+
+    :param text: 搜索内容
+    :param page: 当前页数，默认为1
+    :param size: 大小，默认为10
+    :param sort_name: 排序列，默认为 circulation_date（发布日期），还有以下几个参数
+        1. standard_no：标准号
+        2. caibiao_status：采标状态
+        3. cn_name：标准名称
+        4. standard_type：类别
+        5. status：状态
+        6. circulation_date：发布日期
+        7. implement_date：实施日期
+    :param sort_type: 排序，默认为正序
+    :return:
+    """
+    url = "http://openstd.samr.gov.cn/bzgk/gb/std_list"
+    params = {
+        "p.p1": 0,
+        "p.p90": sort_name,  # 排序列
+        "p.p91": sort_type,  # 正序还是倒序
+        "p.p2": text,
+        'page': page,
+        'pageSize': size
+    }
+
+    r = requests.get(url, params=params)
+
+    total_size = int(re.findall(r'<span class="badge">(\d+)</span>', r.text)[0])
+
+    items = re.findall(r"<tr>([\s\S]*?)</tr>", r.text.replace('\r\n', '').replace('\t', ''))
+    records = []
+    for item in items[5:-2]:
+        data = re.findall(r"<td([\s\S]*?)</td>", item)
+        records.append({
+            'hcno': re.findall(r"showInfo\('(.+?)'\);", data[1])[0],
+            'caibiao_status': data[2] if data[2] != ">  " else "不采标",
+            'standard_no': re.findall(r'\);">(.*?)</a>', data[1])[0],
+            'cn_name': re.findall(r'\);">(.*?)</a>', data[3])[0],
+            'standard_type': data[4].replace('>', ''),
+            'status': re.findall('[\u4e00-\u9fa5]{2,4}', data[5])[0],
+            'circulation_date': datetime.fromisoformat(data[6][:-2].replace(">", '')).date(),
+            'implement_date': datetime.fromisoformat(data[7][:-2].replace(">", '')).date()
+        })
+    return {
+        'total_size': total_size,
+        'records': records
+    }
