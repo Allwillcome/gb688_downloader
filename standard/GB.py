@@ -6,7 +6,7 @@ from pathlib import Path
 
 import requests
 
-from .config import BAN_LIST
+from .utils import filter_file
 
 
 class GB:
@@ -84,20 +84,19 @@ class GB:
         if not self.can_download(hcno):
             raise Exception("该文件源网页无法在线预览，故无法进行下载，请自行打开网页进行查询")
 
+        # 文件处理
+        path = Path(path)
+        try:
+            path.mkdir(exist_ok=True)
+        except FileNotFoundError:
+            print("请查看该文件的父目录是否已经被创建")
+
         g_name, c_name = self.get_pdf_name(hcno)
         pdf_name = f"{g_name}({c_name})"
 
-        for b in BAN_LIST:
-            pdf_name = pdf_name.replace(b, " ")
+        pdf_name = filter_file(pdf_name)
 
         pdf_bytes = self.get_bytes(hcno)
-
-        path = Path(path)
-        if not path.exists():
-            try:
-                path.mkdir()
-            except FileNotFoundError:
-                print("请查看该文件的父目录是否已经被创建")
 
         file_path = path / f"{pdf_name}.pdf"
         with open(file_path, "wb") as f:
@@ -157,13 +156,16 @@ class GB:
             'records': records
         }
 
-    def search_and_download(self, key, path='file'):
+    def search_and_download(self, key, path=None):
         """搜索并进行下载
 
         :param key: 关键词
         :param path: 保存路径
         :return:
         """
+        if path is None:
+            path = filter_file(key)
+
         size = 10
         records = self.search(key, page=1, size=10)
         total_size = records['total_size']
@@ -180,6 +182,7 @@ class GB:
                 print(record)
                 try:
                     self.download(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}", path)
-                except:
+                except Exception as e:
+                    print(e)
                     error_record.append(record)
                     continue

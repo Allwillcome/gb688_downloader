@@ -2,20 +2,32 @@
 这是一个中国国家标准、行业标准、地方标准的下载工具  
 国家标准可以来自[国家标准全文系统](http://openstd.samr.gov.cn/bzgk/gb/index)
 行业标准、地方标准来自[全国标准信息公共服务平台](http://std.samr.gov.cn/)  
-国标的下载逻辑参考了[lzghzr](https://github.com/lzghzr/TampermonkeyJS/blob/master/GBdownload/GBdownload.user.js)的油猴插件
+国标的下载逻辑参考了[lzghzr](https://github.com/lzghzr/TampermonkeyJS/blob/master/GBdownload/GBdownload.user.js) 的油猴插件
 
 # 示例
-## 下载国标
-运行`command.py`或者下载封装的[exe](https://github.com/renmu123/gb688_downloader/releases)（只在win10进行过测试）按照提示即可使用
-## 下载地方标准
-### 采用搜索之后进行批量下载
-    t = 'dbba'
-    data = search('政务云工程评价指标体系及方法', t=t)
-    name = f'{data["records"][0]["code"]}({data["records"][0]["chName"]}'
-    download(pk=data['records'][0]['pk'], name=name, t=t)
+    from standard import GB, HDB
 
-
-# `ministry`以及`industry`的代号
+    if __name__ == '__main__':
+        gb = GB()
+        # 下载特定的国标
+        gb.download('http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=D8AB02F0141FE11A4976E0E94FCF58B4')
+        # 搜索并下载所有符合关键字的国标，默认下载
+        gb.search_and_download('养老')
+        
+        # hbba代表的是行标，dbba代表的是地标
+        hb = HDB('hbba')
+        db = HDB('dbba')
+        
+        # 搜索并下载符合关键字的第一个标准
+        data = db.search('政务云工程评价指标体系及方法')
+        first_record = data["records"][0]
+        name = f'{first_record["code"]}({first_record["chName"]}'
+        db.download(pk=first_record['pk'], name=name)
+        
+        # 搜索并下载符合关键字的所有地方标准
+        db.search_and_download("电子政务")
+        
+## 地标和行标中的一些参数
 ## 地方标准中的`ministry`代号
 
 | 城市             | 代号      |
@@ -175,9 +187,14 @@
 | 减灾救灾与综合性应急管理 	|
 # TODO
 - [x] 支持行业标准、地方标准的下载
-- [x] 对所有 input 进行异常处理
-- [x] V0.5 使用pyinstaller进行打包
+- [x] 对 input 进行异常处理
 - [x] 对不提供下载的国标、行标、地标进行处理
 - [x] 搜索的时候支持翻页功能
-- [ ] 将三者的搜索下载集合在一起
-- [ ] 支持使用命令行来进行下载
+- [x] 将三者的搜索下载集合在一起
+- [x] 支持批量下载
+- [x] 重构
+- [x] 使用Tkinter构建GUI程序
+
+
+# 免责声明
+**本项目仅供学习交流之用，请勿用于非法用途。**
