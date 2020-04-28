@@ -81,13 +81,24 @@ class HDB:
         :param path: 路径
         :return:
         """
-        if path is None:
-            path = filter_file(key)
-
         total = self.search(key, current=1, size=100)['total']
         records = self.search(key, current=1, size=total)['records']
         if not records:
             return
+
+        return self.download_all(records, total, path, key)
+
+    def download_all(self, records, total, path, key):
+        """下载所有记录
+
+        :param key:
+        :param records:
+        :param total:
+        :param path:
+        :return:
+        """
+        if path is None:
+            path = filter_file(key)
 
         error_record = []
         for record in records:
@@ -101,7 +112,6 @@ class HDB:
 
         print(f"共{len(records)}条记录，成功{len(records) - len(error_record)}条，失败{len(error_record)}条")
         print(error_record)
-
         return {
             'total': total,
             'error_code': error_record

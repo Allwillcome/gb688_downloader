@@ -106,12 +106,12 @@ class GB:
 
         return path
 
-    def search(self, key, page=1, size=10, sort_name='circulation_date', sort_type='desc'):
+    def search(self, key, page=1, size=25, sort_name='circulation_date', sort_type='desc'):
         """国标的下载
 
         :param key: 搜索内容
         :param page: 当前页数，默认为1
-        :param size: 大小，默认为10
+        :param size: 大小，默认为25，仅支持10,25,50三个选项
         :param sort_name: 排序列，默认为 circulation_date（发布日期），还有以下几个参数
             1. standard_no：标准号
             2. caibiao_status：采标状态
@@ -152,6 +152,7 @@ class GB:
                 'implement_date': datetime.fromisoformat(data[7][:-2].replace(">", '')).date()
             })
         return {
+            'pages': 1 if total_size == size else (total_size // size + 1),
             'total_size': total_size,
             'records': records
         }
@@ -186,3 +187,17 @@ class GB:
                     print(e)
                     error_record.append(record)
                     continue
+
+    def download_all(self, records, path, key):
+        if path is None:
+            path = filter_file(key)
+
+        error_record = []
+
+        for record in records:
+            try:
+                self.download(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}", path)
+            except Exception as e:
+                print(e)
+                error_record.append(record)
+                continue
