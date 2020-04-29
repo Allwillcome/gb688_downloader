@@ -7,53 +7,9 @@
 import tkinter as tk
 from tkinter import messagebox
 from standard import HDB, GB
-from prettytable import PrettyTable
 from standard.utils import filter_file
-
-
-#
-# def download_hdb(t: str, text: str, page: int = 1, size: int = 15):
-#     data = search(text, t=t, current=page, size=size)
-#     pages = data['pages']
-#     total = data['total']
-#
-#     print(f"\n本次搜索共有{pages}页，目前是第{page}页，共{total}项")
-#     table = PrettyTable(['编号', '标准号', '名称'])
-#     for index, d in enumerate(data['records'], start=1):
-#         table.add_row([index, d['code'], d['chName']])
-#
-#     if len(data['records']) == 0:
-#         print(f"没有找到匹配的记录")
-#     else:
-#         print(table)
-#
-#     num = int(input("请输入标准的编号来进行下载(向下翻页请输入-1，向上请输入0)："))  # 这里需要对其进行检测，以防不是int
-#     if len(data['records']) < num < -1:
-#         input("输入错误，退出")
-#         exit()
-#     elif num == -1:
-#         if page * size > total:
-#             print(f"已经是最后一页了")
-#         else:
-#             page += 1
-#         download_hdb(t, text, page, size)
-#     elif num == 0:
-#         if page == 1:
-#             print(f"已经是第一页了")
-#         else:
-#             page -= 1
-#         download_hdb(t, text, page, size)
-#     else:
-#         try:
-#             path = download(pk=data['records'][num - 1]['pk'],
-#                             name=f'{data["records"][num - 1]["code"]}（{data["records"][num - 1]["chName"]}）', t=t)
-#             print("下载成功")
-#             download_hdb(t, text, page, size)
-#         except Exception:
-#             print(f"该文件源网页不支持下载")
-#             input("按任意键继续下载...")
-#             download_hdb(t, text, page, size)
-#         return path
+from queue import Queue
+import threading
 
 
 class Application(tk.Frame):
@@ -66,6 +22,8 @@ class Application(tk.Frame):
 
         self.master = master
         self.std_widget(master)
+
+        self._job = None
 
     def std_widget(self, master):
         """标准的搜索与下载
@@ -91,6 +49,7 @@ class Application(tk.Frame):
         # 插入文本框输入框
         t = tk.Entry(hdb_frame)
         t.pack(side="top")
+
         tk.Button(hdb_frame, text="搜索",
                   command=lambda: self.hdb_search_create(t.get(), lb.get(lb.curselection()[0]), hdb_frame)).pack(
             side="top")
@@ -172,29 +131,71 @@ class Application(tk.Frame):
                 row=last_row, column=1, )
 
     def std_download(self, data, t, key, master):
-        top_level = tk.Toplevel(master)
-        top_level.title("标准下载")
-        self.center_window(top_level, 1200, 800)
+        # 再开一个进程用来获取数据，另一个用来定时渲染
+        q = Queue()
+        p = threading.Thread(target=self.download, args=(t, key, data, q))
+        p.start()
 
-        if t == '行标':
-            path = f"{filter_file(key)}_hb"
-            for index, record in enumerate(data["records"]):
-                name = f'{record["code"]}({record["chName"]})'
-                try:
+        top_level = tk.Toplevel(master)
+        top_level.title("标准下载aaa")
+        self.center_window(top_level, 1200, 800)
+        t = tk.Text(top_level, height=10)
+        t.grid(row=0, column=0)
+        self.render_text(top_level, t, q)
+
+    def render_text(self, master, text, q: Queue, empty_time=0):
+        self._job = master.after(4000, lambda: self.render_text(master, text, q, empty_time))
+        if q.empty():
+            print('空')
+            empty_time += 4
+            if empty_time > 14:
+                pass
+
+        # print(last_index, total)
+        empty_time = 0
+        index, size, name, status = q.get()
+        if index < size:
+            text.insert('end', f"{name}    {status}\n")
+        elif index == size:
+            text.insert('end', f"{name}    {status}\n")
+            self.cancel()
+            messagebox.showinfo(message="全部下载完毕")
+        else:
+            print("最后啥都没了")
+
+    def cancel(self):
+        if self._job is not None:
+            root.after_cancel(self._job)
+            self._job = None
+
+    def download(self, t, key, data, q: Queue):
+        msg = ""
+        date_length = len(data['records'])
+        for index, record in enumerate(data["records"], 1):
+            # print(record)
+            name = f'{record["code"]}({record["chName"]})'
+            try:
+                if t == '行标':
+                    path = f"{filter_file(key)}_hb"
                     self.hb.download(pk=record['pk'], name=name, path=path)
                     msg = "下载成功"
-                except Exception:
-                    msg = "下载失败"
-                finally:
-                    tk.Label(top_level, text=record["chName"]).grid(row=index, column=0)
-                    tk.Label(top_level, text=msg).grid(row=index, column=1)
 
-        elif t == "地标":
-            path = f"{filter_file(key)}_db"
-            self.db.download_all(data['records'], data['total'], None, f"{key}_db")
-        elif t == "国标":
-            path = f"{filter_file(key)}_gb"
-            self.gb.download_all(data['records'], None, f"{key}_gb")
+                elif t == "地标":
+                    path = f"{filter_file(key)}_db"
+                    self.db.download(pk=record['pk'], name=name, path=path)
+                    msg = "下载成功"
+
+                elif t == "国标":
+                    path = f"{filter_file(key)}_gb"
+                    self.gb.download(f'http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record["ccno"]}', path)
+                    msg = "下载成功"
+
+            except Exception as e:
+                msg = "下载失败"
+
+            finally:
+                # print('download',[index, date_length, record["chName"], msg])
+                q.put([index, date_length, record["chName"], msg])
 
     @staticmethod
     def clear_frame(frame):
@@ -220,6 +221,7 @@ class Application(tk.Frame):
         master.geometry(size)
 
 
-root = tk.Tk()
-app = Application(master=root)
-app.mainloop()
+if __name__ == '__main__':
+    root = tk.Tk()
+    app = Application(master=root)
+    app.mainloop()
