@@ -137,9 +137,9 @@ class Application(tk.Frame):
         p.start()
 
         top_level = tk.Toplevel(master)
-        top_level.title("标准下载aaa")
+        top_level.title("标准下载")
         self.center_window(top_level, 1200, 800)
-        t = tk.Text(top_level, height=10)
+        t = tk.Text(top_level, height=30)
         t.grid(row=0, column=0)
         self.render_text(top_level, t, q)
 
