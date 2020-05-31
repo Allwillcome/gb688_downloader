@@ -172,22 +172,24 @@ class Application(tk.Frame):
         msg = ""
         date_length = len(data['records'])
         for index, record in enumerate(data["records"], 1):
-            # print(record)
-            name = f'{record["code"]}({record["chName"]})'
+            print(record)
             try:
                 if t == '行标':
+                    name = f'{record["code"]}({record["chName"]})'
                     path = f"{filter_file(key)}_hb"
                     self.hb.download(pk=record['pk'], name=name, path=path)
                     msg = "下载成功"
 
                 elif t == "地标":
+                    name = f'{record["code"]}({record["chName"]})'
                     path = f"{filter_file(key)}_db"
                     self.db.download(pk=record['pk'], name=name, path=path)
                     msg = "下载成功"
 
                 elif t == "国标":
+                    name = f'{record["standard_no"]}({record["cn_name"]})'
                     path = f"{filter_file(key)}_gb"
-                    self.gb.download(f'http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record["ccno"]}', path)
+                    self.gb.download(f'http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record["hcno"]}', path)
                     msg = "下载成功"
 
             except Exception as e:
@@ -195,8 +197,11 @@ class Application(tk.Frame):
 
             finally:
                 # print('download',[index, date_length, record["chName"], msg])
-                q.put([index, date_length, record["chName"], msg])
+                try:
+                    q.put([index, date_length, record["chName"], msg])
+                except KeyError:
 
+                    q.put([index, date_length, record["cn_name"], msg])
     @staticmethod
     def clear_frame(frame):
         """清除frame中的部件
