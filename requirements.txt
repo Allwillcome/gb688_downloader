@@ -13,3 +13,6 @@ pywin32-ctypes==0.2.0
 requests==2.23.0
 six==1.14.0
 urllib3==1.25.8
+
+setuptools~=40.8.0
+Flask~=1.1.2

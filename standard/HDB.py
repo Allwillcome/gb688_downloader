@@ -2,16 +2,57 @@ from pathlib import Path
 from typing import Union
 
 import requests
-
+from requests import Response
 from .utils import filter_file
 
 
-class HDB:
+class HDBCore:
     def __init__(self, t):
         """
 
         :param t: 区分行业或地区标准，参数，行业标准：hbba、地方标准：dbba
         """
+        if t not in {'hbba', 'dbba'}:
+            raise Exception("t参数错误，请查询文档")
+        self.type = t
+
+    def _search(self, key, status: str = '', pubdate: str = '', ministry: str = '', industry: str = '',
+                current: int = 1, size: int = 15) -> Response:
+        """这个函数用来对地方标准进行搜索，当值为空时，则默认为全部
+
+        :param key: 搜索关键词
+        :param status: 标准的状态，有以下几个状态：''、'现行'、'有更新版'、'废止'
+        :param pubdate: 备案日期，''、'-1'、'-3'、'-6'、'-12'、'-24'。这里的数字是代表一个月，即一个月内备案的标准
+        :param ministry: 地区代号请参考文档
+        :param industry: 行业代号请参考文档
+        :param current:
+        :param size:
+        :return:
+        """
+        url = f"http://{self.type}.sacinfo.org.cn/stdQueryList"
+        data = {
+            'current': current,
+            'size': size,
+            'key': key,
+            'status': status,
+            'ministry': ministry,
+            'industry': industry,
+            'pubdate': pubdate,
+            'date': ''
+        }
+
+        r = requests.post(url, data=data)
+        return r
+
+
+class HDB(HDBCore):
+    def __init__(self, t):
+        """
+
+        :param t: 区分行业或地区标准，参数，行业标准：hbba、地方标准：dbba
+        """
+        super(HDB, self).__init__(t)
+
         if t not in {'hbba', 'dbba'}:
             raise Exception("t参数错误，请查询文档")
         self.type = t
@@ -45,35 +86,6 @@ class HDB:
 
         return file_path
 
-    def search(self, key, status: str = '', pubdate: str = '', ministry: str = '', industry: str = '',
-               current: int = 1,
-               size: int = 15) -> dict:
-        """这个函数用来对地方标准进行搜索，当值为空时，则默认为全部
-
-        :param key: 搜索关键词
-        :param status: 标准的状态，有以下几个状态：''、'现行'、'有更新版'、'废止'
-        :param pubdate: 备案日期，''、'-1'、'-3'、'-6'、'-12'、'-24'。这里的数字是代表一个月，即一个月内备案的标准
-        :param ministry: 地区代号请参考文档
-        :param industry: 行业代号请参考文档
-        :param current:
-        :param size:
-        :return:
-        """
-        url = f"http://{self.type}.sacinfo.org.cn/stdQueryList"
-        data = {
-            'current': current,
-            'size': size,
-            'key': key,
-            'status': status,
-            'ministry': ministry,
-            'industry': industry,
-            'pubdate': pubdate,
-            'date': ''
-        }
-
-        r = requests.post(url, data=data)
-        return r.json()
-
     def search_and_download(self, key, path=None):
         """搜索关键字并下载所有内容
 
@@ -81,12 +93,35 @@ class HDB:
         :param path: 路径
         :return:
         """
-        total = self.search(key, current=1, size=100)['total']
-        records = self.search(key, current=1, size=total)['records']
+        total = self._search(key, current=1, size=100).json()['total']
+        records = self._search(key, current=1, size=total).json()['records']
         if not records:
             return
 
         return self.download_all(records, total, path, key)
+
+    def search(self, key, status: str = '', pubdate: str = '', ministry: str = '', industry: str = '',
+               current: int = 1, size: int = 15):
+        return self._search(key, status, pubdate, ministry, industry, current, size).json()
+
+    def format_search_api(self, key, status: str = '', pubdate: str = '', ministry: str = '', industry: str = '',
+                          page: int = 1, size: int = 15):
+        data = self.search(key, status, pubdate, ministry, industry, page, size)
+        records = []
+        for record in data['records']:
+            d = {
+                'status': record['status'],
+                'key': record['pk'],
+                'name': record['chName'],
+                'standard_no': record['code'],
+                'act_date': record['actDate']
+            }
+            records.append(d)
+        return {
+            'pages': page,
+            'total_size': data['total'],
+            'records': records
+        }
 
     def download_all(self, records, total, path, key):
         """下载所有记录

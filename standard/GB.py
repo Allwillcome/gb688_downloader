@@ -5,11 +5,11 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
-
+from requests import Response
 from .utils import filter_file
 
 
-class GB:
+class GBCore:
     def get_bytes(self, hcno: str) -> bytes:
         """
         这部分代码可以在对 http://openstd.samr.gov.cn/bzgk/gb/index 网站的手机版预览模式下抓包获得
@@ -28,9 +28,51 @@ class GB:
             time.sleep(1)
 
             text += requests.get(url, headers=headers).text
-            print(f"正在下载中{i * 10}%")
         pdf_bytes = base64.standard_b64decode(text)
         return pdf_bytes
+
+    def _download(self, hcno, path, pdf_name):
+        pdf_bytes = self.get_bytes(hcno)
+
+        file_path = path / f"{pdf_name}.pdf"
+        with open(file_path, "wb") as f:
+            f.write(pdf_bytes)
+        return file_path
+
+    def _search(self, key, page=1, size=25, sort_name='circulation_date', sort_type='desc') -> Response:
+        """国标的下载
+
+        :param key: 搜索内容
+        :param page: 当前页数，默认为1
+        :param size: 大小，默认为25，仅支持10,25,50三个选项
+        :param sort_name: 排序列，默认为 circulation_date（发布日期），还有以下几个参数
+            1. standard_no：标准号
+            2. caibiao_status：采标状态
+            3. cn_name：标准名称
+            4. standard_type：类别
+            5. status：状态
+            6. circulation_date：发布日期
+            7. implement_date：实施日期
+        :param sort_type: 排序，默认为正序
+        :return:
+        """
+        url = "http://openstd.samr.gov.cn/bzgk/gb/std_list"
+        params = {
+            "p.p1": 0,
+            "p.p90": sort_name,  # 排序列
+            "p.p91": sort_type,  # 正序还是倒序
+            "p.p2": key,
+            'page': page,
+            'pageSize': size
+        }
+
+        r = requests.get(url, params=params)
+        return r
+
+
+class GB(GBCore):
+    def __init__(self):
+        super().__init__()
 
     def get_hcno(self, url: str) -> str:
         """获取hcno
@@ -96,11 +138,7 @@ class GB:
 
         pdf_name = filter_file(pdf_name)
 
-        pdf_bytes = self.get_bytes(hcno)
-
-        file_path = path / f"{pdf_name}.pdf"
-        with open(file_path, "wb") as f:
-            f.write(pdf_bytes)
+        self._download(hcno, path, pdf_name)
 
         print(f"{pdf_name} 下载成功")
 
@@ -123,17 +161,7 @@ class GB:
         :param sort_type: 排序，默认为正序
         :return:
         """
-        url = "http://openstd.samr.gov.cn/bzgk/gb/std_list"
-        params = {
-            "p.p1": 0,
-            "p.p90": sort_name,  # 排序列
-            "p.p91": sort_type,  # 正序还是倒序
-            "p.p2": key,
-            'page': page,
-            'pageSize': size
-        }
-
-        r = requests.get(url, params=params)
+        r = self._search(key, page, size, sort_name, sort_type)
 
         total_size = int(re.findall(r'<span class="badge">(\d+)</span>', r.text)[0])
 
@@ -148,12 +176,30 @@ class GB:
                 'cn_name': re.findall(r'\);">(.*?)</a>', data[3])[0],
                 'standard_type': data[4].replace('>', ''),
                 'status': re.findall('[\u4e00-\u9fa5]{2,4}', data[5])[0],
-                'circulation_date': datetime.fromisoformat(data[6][:-2].replace(">", '')).date(),
-                'implement_date': datetime.fromisoformat(data[7][:-2].replace(">", '')).date()
+                'circulation_date': datetime.fromisoformat(data[6][:-2].replace(">", '')),
+                'implement_date': datetime.fromisoformat(data[7][:-2].replace(">", ''))
             })
         return {
             'pages': 1 if total_size == size else (total_size // size + 1),
             'total_size': total_size,
+            'records': records
+        }
+
+    def format_search_api(self, key, page=1, size=25, sort_name='circulation_date', sort_type='desc'):
+        data = self.search(key, page, size, sort_name, sort_type)
+        records = []
+        for record in data['records']:
+            d = {
+                'status': record['status'],
+                'key': record['hcno'],
+                'name': record['cn_name'],
+                'standard_no': record['standard_no'],
+                'act_date': record['implement_date'].timestamp()*1000
+            }
+            records.append(d)
+        return {
+            'pages': data['pages'],
+            'total_size': data['total_size'],
             'records': records
         }
 
