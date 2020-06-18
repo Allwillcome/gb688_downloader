@@ -2,7 +2,7 @@ from pathlib import Path
 
 from flask import Flask, request, send_file
 from flask_cors import CORS
-
+from utils import net_is_used
 from standard import Client, utils, GB
 
 app = Flask(__name__)
@@ -67,4 +67,8 @@ def gb_download(hcno, path=Path(".")):
 
 
 if __name__ == '__main__':
-    app.run()
+    PORT = 23439
+    if not net_is_used(PORT):
+        app.run(port=PORT)
+    else:
+        print("端口被占用")
