@@ -1,5 +1,5 @@
 from pathlib import Path
-
+from io import BytesIO, FileIO
 from flask import Flask, request, send_file
 from flask_cors import CORS
 
@@ -10,9 +10,8 @@ app = Flask(__name__)
 CORS(app)
 gb = GB()
 
+
 # TODO: 支持国标、地标、行标的下载
-# TODO: 接口的改造，以便完成下一个 TODO
-# TODO: 不再传递文件路径，而是 IO
 # TODO: download check的全覆盖
 
 
@@ -24,8 +23,10 @@ def search(t):
     :return:
     """
     q = request.args.get('q')
+    page = request.args.get('page', default=1, type=int)
+    size = request.args.get('page', default=15, type=int)
     client = Client(t).create()
-    data = client.format_search_api(key=q, page=1, size=15)
+    data = client.format_search_api(key=q, page=page, size=size)
     return data
 
 
@@ -67,13 +68,12 @@ def download(t):
     else:
         return "bbb", 404
     if not res['err']:
-        path = str(res['path'])
-        return send_file(path)
+        return send_file(BytesIO(res["file"]), as_attachment=True, attachment_filename=res["name"], cache_timeout=0, mimetype="application/pdf")
     else:
-        return "aaa", 404
+        return res, 404
 
 
-def gb_download(hcno, path=Path(".")):
+def gb_download(hcno):
     if not gb.can_download(hcno):
         return {
             "err": "该文件不支持下载",
@@ -85,19 +85,17 @@ def gb_download(hcno, path=Path(".")):
     pdf_name = utils.filter_file(pdf_name)
 
     pdf_bytes = gb.get_bytes(hcno)
-
-    file_path = path / f"{pdf_name}.pdf"
-    with open(file_path, "wb") as f:
-        f.write(pdf_bytes)
+    file_name = f"{pdf_name}.pdf"
     return {
         "err": "",
-        "path": file_path
+        "file": pdf_bytes,
+        "name": file_name
     }
 
 
 if __name__ == '__main__':
     PORT = 23439
     if not net_is_used(PORT):
-        app.run(port=PORT)
+        app.run(port=PORT, debug=True)
     else:
         print("端口被占用")

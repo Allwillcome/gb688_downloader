@@ -180,7 +180,7 @@ class GB(GBCore):
                 'implement_date': datetime.fromisoformat(data[7][:-2].replace(">", ''))
             })
         return {
-            'pages': 1 if total_size == size else (total_size // size + 1),
+            # 'pages': 1 if total_size == size else (total_size // size + 1),
             'total_size': total_size,
             'records': records
         }
@@ -198,7 +198,7 @@ class GB(GBCore):
             }
             records.append(d)
         return {
-            'pages': data['pages'],
+            # 'pages': data['pages'],
             'total_size': data['total_size'],
             'records': records
         }
