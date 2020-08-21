@@ -11,11 +11,22 @@ gb = GB()
 
 
 @app.route('/api/search/<t>')
-def hello_world(t):
+def search(t):
     q = request.args.get('q')
     client = Client(t).create()
     data = client.format_search_api(key=q, page=1, size=15)
     return data
+
+
+@app.route('/api/download_check/<t>')
+def download_check(t):
+    key = request.args.get('key')
+    client = Client(t).create()
+    can_download = client.can_download(key)
+    if can_download:
+        return {"status": 1}
+    else:
+        return {"status": 0}
 
 
 @app.route('/api/download/<t>')
