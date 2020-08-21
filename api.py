@@ -13,6 +13,7 @@ gb = GB()
 # TODO: 支持国标、地标、行标的下载
 # TODO: 接口的改造，以便完成下一个 TODO
 # TODO: 不再传递文件路径，而是 IO
+# TODO: download check的全覆盖
 
 
 @app.route('/api/search/<t>')
