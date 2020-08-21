@@ -2,16 +2,26 @@ from pathlib import Path
 
 from flask import Flask, request, send_file
 from flask_cors import CORS
-from utils import net_is_used
+
 from standard import Client, utils, GB
+from utils import net_is_used
 
 app = Flask(__name__)
 CORS(app)
 gb = GB()
 
+# TODO: 支持国标、地标、行标的下载
+# TODO: 接口的改造，以便完成下一个 TODO
+# TODO: 不再传递文件路径，而是 IO
+
 
 @app.route('/api/search/<t>')
 def search(t):
+    """搜索功能
+
+    :param t:
+    :return:
+    """
     q = request.args.get('q')
     client = Client(t).create()
     data = client.format_search_api(key=q, page=1, size=15)
@@ -20,6 +30,11 @@ def search(t):
 
 @app.route('/api/download_check/<t>')
 def download_check(t):
+    """检查标准能否下载
+
+    :param t:
+    :return:
+    """
     key = request.args.get('key')
     client = Client(t).create()
     can_download = client.can_download(key)
@@ -31,6 +46,11 @@ def download_check(t):
 
 @app.route('/api/download/<t>')
 def download(t):
+    """下载标准
+
+    :param t:
+    :return:
+    """
     q = request.args.get('key')
     if t == 'gb':
         res = gb_download(q)
@@ -45,9 +65,7 @@ def download(t):
     #     data = db.download(q)
     else:
         return "bbb", 404
-    print(res['err'])
     if not res['err']:
-        print("aa", res['path'])
         path = str(res['path'])
         return send_file(path)
     else:
@@ -58,7 +76,6 @@ def gb_download(hcno, path=Path(".")):
     if not gb.can_download(hcno):
         return {
             "err": "该文件不支持下载",
-            "path": ""
         }
 
     g_name, c_name = gb.get_pdf_name(hcno)
