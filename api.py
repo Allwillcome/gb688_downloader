@@ -1,20 +1,21 @@
-from pathlib import Path
-from io import BytesIO, FileIO
+from io import BytesIO
+
 from flask import Flask, request, send_file
 from flask_cors import CORS
 
-from standard import Client, utils, GB
+from standard import Client, utils, GB, HDB
 from utils import net_is_used
 
 app = Flask(__name__)
 CORS(app)
 gb = GB()
+hb = HDB("hbba")
+db = HDB("dbba")
 
 
-# TODO: 支持国标、地标、行标的下载
-# TODO: download check的全覆盖
-
-
+# TODO:支持下载多个
+# TODO:支持进度条反馈
+# TODO: 支持国标下载重试
 @app.route('/api/search/<t>')
 def search(t):
     """搜索功能
@@ -24,7 +25,7 @@ def search(t):
     """
     q = request.args.get('q')
     page = request.args.get('page', default=1, type=int)
-    size = request.args.get('page', default=15, type=int)
+    size = request.args.get('size', default=15, type=int)
     client = Client(t).create()
     data = client.format_search_api(key=q, page=page, size=size)
     return data
@@ -54,31 +55,23 @@ def download(t):
     :return:
     """
     q = request.args.get('key')
+    name = request.args.get("name", default="")
+
     if t == 'gb':
         res = gb_download(q)
-        # res = {
-        #     "err": "",
-        #     "path": "gui.py",
-        #     "sasa": "adsa"
-        # }
-    # elif t == 'hb':
-    #     data = hb.download(q)
-    # elif t == 'db':
-    #     data = db.download(q)
+    elif t in {'hb', 'db'}:
+        res = hdb_download(q, name, t)
     else:
-        return "bbb", 404
+        return 404
+
     if not res['err']:
-        return send_file(BytesIO(res["file"]), as_attachment=True, attachment_filename=res["name"], cache_timeout=0, mimetype="application/pdf")
+        return send_file(BytesIO(res["file"]), as_attachment=True, attachment_filename=res["name"], cache_timeout=0,
+                         mimetype="application/pdf")
     else:
         return res, 404
 
 
 def gb_download(hcno):
-    if not gb.can_download(hcno):
-        return {
-            "err": "该文件不支持下载",
-        }
-
     g_name, c_name = gb.get_pdf_name(hcno)
     pdf_name = f"{g_name}({c_name})"
 
@@ -90,6 +83,31 @@ def gb_download(hcno):
         "err": "",
         "file": pdf_bytes,
         "name": file_name
+    }
+
+
+def hdb_download(key, name, t):
+    """
+
+    :param t:
+    :param name:
+    :param key:
+    :return:
+    """
+    if t == "hb":
+        bytes_io = hb.download_api(key)
+    elif t == "db":
+        bytes_io = db.download_api(key)
+    else:
+        return {
+            "err": "参数只允许 hb 和 db两个",
+            "file": "pdf_bytes",
+            "name": "file_name"
+        }
+    return {
+        "err": "",
+        "file": bytes_io,
+        "name": name
     }
 
 

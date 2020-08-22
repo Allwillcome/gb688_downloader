@@ -57,6 +57,20 @@ class HDB(HDBCore):
             raise Exception("t参数错误，请查询文档")
         self.type = t
 
+    def download_api(self, key):
+        url = f'http://{self.type}.sacinfo.org.cn/attachment/downloadStdFile?pk={key}'
+        r = requests.get(url)
+        return r.content
+
+    def can_download(self, key):
+        url = f'http://{self.type}.sacinfo.org.cn/attachment/downloadStdFile?pk={key}'
+        r = requests.get(url)
+
+        if len(r.content) == 0:
+            return False
+        else:
+            return True
+
     def download(self, pk: str, name: str, path: Union[str, Path] = '.') -> Path:
         """
 
