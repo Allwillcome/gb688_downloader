@@ -3,7 +3,7 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import requests
 from requests import Response
@@ -155,7 +155,7 @@ class GB(GBCore):
             raise Exception("未找到标准号和标准名称")
         return g_name[0], c_name[0]
 
-    def download(self, url: str, folder: Optional[str, Path] = '', name: str = None):
+    def download(self, url: str, folder: Union[str, Path] = '', name: str = None):
         """下载国标
 
         :param name:
