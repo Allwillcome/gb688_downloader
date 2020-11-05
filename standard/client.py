@@ -1,8 +1,9 @@
 from . import GB, HDB
+from typing import Literal
 
 
 class Client:
-    def __init__(self, t):
+    def __init__(self, t: Literal["gb", "hbba", "dbba"]):
         self.type = t
 
     def create(self):

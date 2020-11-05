@@ -3,9 +3,11 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import requests
 from requests import Response
+
 from .utils import filter_file
 
 
@@ -31,15 +33,8 @@ class GBCore:
         pdf_bytes = base64.standard_b64decode(text)
         return pdf_bytes
 
-    def _download(self, hcno, path, pdf_name):
-        pdf_bytes = self.get_bytes(hcno)
-
-        file_path = path / f"{pdf_name}.pdf"
-        with open(file_path, "wb") as f:
-            f.write(pdf_bytes)
-        return file_path
-
-    def _search(self, key, page=1, size=25, sort_name='circulation_date', sort_type='desc') -> Response:
+    def _search(self, key: str, page: int = 1, size: int = 25, sort_name: str = 'circulation_date',
+                sort_type: str = 'desc') -> Response:
         """国标的下载
 
         :param key: 搜索内容
@@ -69,82 +64,8 @@ class GBCore:
         r = requests.get(url, params=params)
         return r
 
-
-class GB(GBCore):
-    def __init__(self):
-        super().__init__()
-
-    def get_hcno(self, url: str) -> str:
-        """获取hcno
-
-        :param url:
-        :return:
-        """
-        hcno = url.split("?hcno=")[1]
-        return hcno
-
-    def can_download(self, hcno: str) -> bool:
-        """判断能否下载pdf
-
-        :param hcno:
-        :return:
-        """
-        r = requests.get(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={hcno}")
-        if "在线预览" in r.text:
-            return True
-        else:
-            return False
-
-    def get_pdf_name(self, hcno: str) -> tuple:
-        """获取pdf的名称
-
-        :param hcno: 标准的hcno值
-        :return: 返回pdf的名称
-        """
-        r = requests.get(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={hcno}")
-        g_name = re.findall(r"标准号：(.*?) </h1></td>", r.text)
-        if not g_name:
-            g_name = re.findall(r"标准号：(.*?) <span", r.text)
-
-        c_name = re.findall(r"中文标准名称：<b>(.*?)</b></td>", r.text)
-        if len(g_name) == 0 or len(c_name) == 0:
-            raise Exception("未找到标准号和标准名称")
-        return g_name[0], c_name[0]
-
-    def download(self, url: str, path=''):
-        """下载国标
-
-        :param url:
-        :param path:
-        :return:
-        """
-        try:
-            hcno = self.get_hcno(url)
-        except IndexError:
-            raise Exception("请关注您输入的网站是否包含hcno信息")
-
-        if not self.can_download(hcno):
-            raise Exception("该文件源网页无法在线预览，故无法进行下载，请自行打开网页进行查询")
-
-        # 文件处理
-        path = Path(path)
-        try:
-            path.mkdir(exist_ok=True)
-        except FileNotFoundError:
-            print("请查看该文件的父目录是否已经被创建")
-
-        g_name, c_name = self.get_pdf_name(hcno)
-        pdf_name = f"{g_name}({c_name})"
-
-        pdf_name = filter_file(pdf_name)
-
-        self._download(hcno, path, pdf_name)
-
-        print(f"{pdf_name} 下载成功")
-
-        return path
-
-    def search(self, key, page=1, size=25, sort_name='circulation_date', sort_type='desc'):
+    def search(self, key: str, page: int = 1, size: int = 25, sort_name: str = 'circulation_date',
+               sort_type: str = 'desc'):
         """国标的下载
 
         :param key: 搜索内容
@@ -180,12 +101,95 @@ class GB(GBCore):
                 'implement_date': datetime.fromisoformat(data[7][:-2].replace(">", ''))
             })
         return {
-            # 'pages': 1 if total_size == size else (total_size // size + 1),
             'total_size': total_size,
             'records': records
         }
 
-    def format_search_api(self, key, page=1, size=25, sort_name='circulation_date', sort_type='desc'):
+
+class GB(GBCore):
+    def __init__(self):
+        super().__init__()
+
+    def save(self, hcno: str, path: Path, pdf_name: str):
+        pdf_bytes = self.get_bytes(hcno)
+
+        file_path = path / f"{pdf_name}"
+        with open(file_path, "wb") as f:
+            f.write(pdf_bytes)
+        return file_path
+
+    def get_hcno(self, url: str) -> str:
+        """获取hcno
+
+        :param url:
+        :return:
+        """
+        hcno = url.split("?hcno=")[1]
+        return hcno
+
+    def can_download(self, hcno: str) -> bool:
+        """判断能否下载pdf
+
+        :param hcno:
+        :return:
+        """
+        r = requests.get(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={hcno}")
+        if "在线预览" in r.text:
+            return True
+        else:
+            return False
+
+    def get_pdf_name(self, hcno: str) -> tuple:
+        """获取pdf的名称
+
+        :param hcno: 标准的hcno值
+        :return: 返回(标准号，标准名)
+        """
+        r = requests.get(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={hcno}")
+        g_name = re.findall(r"标准号：(.*?) </h1></td>", r.text)
+        if not g_name:
+            g_name = re.findall(r"标准号：(.*?) <span", r.text)
+
+        c_name = re.findall(r"中文标准名称：<b>(.*?)</b></td>", r.text)
+        if len(g_name) == 0 or len(c_name) == 0:
+            raise Exception("未找到标准号和标准名称")
+        return g_name[0], c_name[0]
+
+    def download(self, url: str, folder: Optional[str, Path] = '', name: str = None):
+        """下载国标
+
+        :param name:
+        :param url:
+        :param folder:
+        :return:
+        """
+        try:
+            hcno = self.get_hcno(url)
+        except IndexError:
+            raise Exception("请关注您输入的网站是否包含hcno信息")
+
+        if not self.can_download(hcno):
+            raise Exception("该文件源网页无法在线预览，故无法进行下载，请自行打开网页进行查询")
+
+        # 文件处理
+        folder = Path(folder)
+        try:
+            folder.mkdir(exist_ok=True)
+        except FileNotFoundError:
+            print("请查看该文件的父目录是否已经被创建")
+
+        if name is None:
+            g_name, c_name = self.get_pdf_name(hcno)
+            name = f"{g_name}({c_name}).pdf"
+
+        pdf_name = filter_file(name)
+
+        path = self.save(hcno, folder, pdf_name)
+        return path
+
+    # 说实话这个函数不该放到这个类中
+    def format_search_api(self, key: str, page: int = 1, size: int = 25, sort_name: str = 'circulation_date',
+                          sort_type: str = 'desc'):
         data = self.search(key, page, size, sort_name, sort_type)
         records = []
         for record in data['records']:
@@ -194,24 +198,26 @@ class GB(GBCore):
                 'key': record['hcno'],
                 'name': record['cn_name'],
                 'standard_no': record['standard_no'],
-                'act_date': record['implement_date'].timestamp()*1000
+                'act_date': record['implement_date'].timestamp() * 1000
             }
             records.append(d)
         return {
-            # 'pages': data['pages'],
             'total_size': data['total_size'],
             'records': records
         }
 
-    def search_and_download(self, key, path=None):
+
+class GBTools(GB):
+    def __init__(self):
+        super().__init__()
+
+    def search_and_download(self, key: str, folder):
         """搜索并进行下载
 
         :param key: 关键词
-        :param path: 保存路径
+        :param folder: 保存文件夹
         :return:
         """
-        if path is None:
-            path = filter_file(key)
 
         size = 10
         records = self.search(key, page=1, size=10)
@@ -226,24 +232,9 @@ class GB(GBCore):
         for page in range(1, (total_size // size + 2)):
             print(f"现在正在下载{page}页")
             for record in records['records']:
-                print(record)
                 try:
-                    self.download(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}", path)
+                    self.download(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}", folder)
                 except Exception as e:
                     print(e)
                     error_record.append(record)
                     continue
-
-    def download_all(self, records, path, key):
-        if path is None:
-            path = filter_file(key)
-
-        error_record = []
-
-        for record in records:
-            try:
-                self.download(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}", path)
-            except Exception as e:
-                print(e)
-                error_record.append(record)
-                continue
