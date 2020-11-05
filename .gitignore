@@ -3,3 +3,4 @@ dist
 venv
 main.spec
 .idea
+.venv
