@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "gb688_downloader"
+version = "0.1.0"
+description = ""
+authors = ["renmu123 <19961017fyx>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.24.0"
+prettytable = "^1.0.1"
+flask = "^1.1.2"
+Flask-Cors = "^3.0.9"
+dearpygui = "^0.5.62"
+
+[tool.poetry.dev-dependencies]
+PyInstaller = "^4.0"
+
+[[tool.poetry.source]]
+name = "tuna"
+default = true
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+

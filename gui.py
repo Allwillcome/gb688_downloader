@@ -177,13 +177,13 @@ class Application(tk.Frame):
                 if t == '行标':
                     name = f'{record["code"]}({record["chName"]})'
                     path = f"{filter_file(key)}_hb"
-                    self.hb.download(pk=record['pk'], name=name, path=path)
+                    self.hb.download(pk=record['pk'], name=name, folder=path)
                     msg = "下载成功"
 
                 elif t == "地标":
                     name = f'{record["code"]}({record["chName"]})'
                     path = f"{filter_file(key)}_db"
-                    self.db.download(pk=record['pk'], name=name, path=path)
+                    self.db.download(pk=record['pk'], name=name, folder=path)
                     msg = "下载成功"
 
                 elif t == "国标":

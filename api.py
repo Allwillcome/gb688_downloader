@@ -95,9 +95,9 @@ def hdb_download(key, name, t):
     :return:
     """
     if t == "hb":
-        bytes_io = hb.download_api(key)
+        bytes_io = hb.get_file_response(key).content
     elif t == "db":
-        bytes_io = db.download_api(key)
+        bytes_io = db.get_file_response(key).content
     else:
         return {
             "err": "参数只允许 hb 和 db两个",
