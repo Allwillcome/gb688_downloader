@@ -13,6 +13,28 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 
 [[package]]
 category = "main"
+description = "Screen-scraping library"
+name = "beautifulsoup4"
+optional = false
+python-versions = "*"
+version = "4.9.3"
+
+[package.dependencies]
+[package.dependencies.soupsieve]
+python = ">=3.0"
+version = ">1.2"
+
+[package.extras]
+html5lib = ["html5lib"]
+lxml = ["lxml"]
+
+[package.source]
+reference = "tuna"
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+
+[[package]]
+category = "main"
 description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
 optional = false
@@ -44,19 +66,6 @@ name = "click"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "7.1.2"
-
-[package.source]
-reference = "tuna"
-type = "legacy"
-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-
-[[package]]
-category = "main"
-description = "DearPyGui: A simple Python GUI Toolkit"
-name = "dearpygui"
-optional = false
-python-versions = ">=3.6"
-version = "0.5.62"
 
 [package.source]
 reference = "tuna"
@@ -320,6 +329,39 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 
 [[package]]
 category = "main"
+description = "A modern CSS selector implementation for Beautiful Soup."
+marker = "python_version >= \"3.0\""
+name = "soupsieve"
+optional = false
+python-versions = ">=3.5"
+version = "2.0.1"
+
+[package.source]
+reference = "tuna"
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+
+[[package]]
+category = "main"
+description = "Retry code until it succeeds"
+name = "tenacity"
+optional = false
+python-versions = "*"
+version = "6.2.0"
+
+[package.dependencies]
+six = ">=1.9.0"
+
+[package.extras]
+doc = ["reno", "sphinx", "tornado (>=4.5)"]
+
+[package.source]
+reference = "tuna"
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+
+[[package]]
+category = "main"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 name = "urllib3"
 optional = false
@@ -367,7 +409,7 @@ type = "legacy"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 
 [metadata]
-content-hash = "64eac865cd6d8285d9ed1a80d1c0e65c82c73f49a37466e7484e08296e7b2213"
+content-hash = "169393d381c070e4978c9a49b6c9428682f225c4cd96abb164a32e85ad8a3a8e"
 lock-version = "1.0"
 python-versions = "^3.8"
 
@@ -375,6 +417,11 @@ python-versions = "^3.8"
 altgraph = [
     {file = "altgraph-0.17-py2.py3-none-any.whl", hash = "sha256:c623e5f3408ca61d4016f23a681b9adb100802ca3e3da5e718915a9e4052cebe"},
     {file = "altgraph-0.17.tar.gz", hash = "sha256:1f05a47122542f97028caf78775a095fbe6a2699b5089de8477eb583167d69aa"},
+]
+beautifulsoup4 = [
+    {file = "beautifulsoup4-4.9.3-py2-none-any.whl", hash = "sha256:4c98143716ef1cb40bf7f39a8e3eec8f8b009509e74904ba3a7b315431577e35"},
+    {file = "beautifulsoup4-4.9.3-py3-none-any.whl", hash = "sha256:fff47e031e34ec82bf17e00da8f592fe7de69aeea38be00523c04623c04fb666"},
+    {file = "beautifulsoup4-4.9.3.tar.gz", hash = "sha256:84729e322ad1d5b4d25f805bfa05b902dd96450f43842c4e99067d5e1369eb25"},
 ]
 certifi = [
     {file = "certifi-2020.6.20-py2.py3-none-any.whl", hash = "sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"},
@@ -387,20 +434,6 @@ chardet = [
 click = [
     {file = "click-7.1.2-py2.py3-none-any.whl", hash = "sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc"},
     {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
-]
-dearpygui = [
-    {file = "dearpygui-0.5.62-cp36-cp36m-macosx_10_6_x86_64.whl", hash = "sha256:21e973c5066e430efaa7782ffb145dab482ff2a8f837d7ad5159793aa96f8686"},
-    {file = "dearpygui-0.5.62-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:897e345d1e7c6723080e670d3f36f7542e730f323782aaaa631e18d26416b837"},
-    {file = "dearpygui-0.5.62-cp36-cp36m-win_amd64.whl", hash = "sha256:67e13235b65124436c1444c777decea40b1cc03b64358532cc203b5e1cc6cdd3"},
-    {file = "dearpygui-0.5.62-cp37-cp37m-macosx_10_6_x86_64.whl", hash = "sha256:9e0086ce2c482ccf7d760a7b92ccb63349435548cf8f3e11a3186b72e6d569a0"},
-    {file = "dearpygui-0.5.62-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:3b8a603725a1ee2fb69a43580f80e5496a6a8c85d3e69244fa6bf21d56090bca"},
-    {file = "dearpygui-0.5.62-cp37-cp37m-win_amd64.whl", hash = "sha256:14bde6648b22764b10cdf0334c42d237244bb3fbf1f755f1f0a617ff11460b4e"},
-    {file = "dearpygui-0.5.62-cp38-cp38-macosx_10_6_x86_64.whl", hash = "sha256:4d48738b2b3619a28f7a3815f7cbb4f522d6cd171302006a903843498f839fd6"},
-    {file = "dearpygui-0.5.62-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:4e7862cf8ce3bbb5b7152734d07599f298b282d1b2c0b55f1e236865e83da6ab"},
-    {file = "dearpygui-0.5.62-cp38-cp38-win_amd64.whl", hash = "sha256:97a1fdc5090ce32be50f847610df2cd525c7cad68ffc407cb0e411ab55c729a2"},
-    {file = "dearpygui-0.5.62-cp39-cp39-macosx_10_6_x86_64.whl", hash = "sha256:4fe4785a4feb43ae5002ce7360ef961d4b6189353c18800adc7e22081a1afb75"},
-    {file = "dearpygui-0.5.62-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:f39e2492136d7a0077b99fca75f8f687f9e00628edb8957780fc6070cde4f0ba"},
-    {file = "dearpygui-0.5.62-cp39-cp39-win_amd64.whl", hash = "sha256:89d53d2040efd8bd695c5b1484e6365f3133a61ef468568d0e83f95630b11b9c"},
 ]
 flask = [
     {file = "Flask-1.1.2-py2.py3-none-any.whl", hash = "sha256:8a4fdd8936eba2512e9c85df320a37e694c93945b33ef33c89946a340a238557"},
@@ -489,6 +522,14 @@ requests = [
 six = [
     {file = "six-1.15.0-py2.py3-none-any.whl", hash = "sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"},
     {file = "six-1.15.0.tar.gz", hash = "sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259"},
+]
+soupsieve = [
+    {file = "soupsieve-2.0.1-py3-none-any.whl", hash = "sha256:1634eea42ab371d3d346309b93df7870a88610f0725d47528be902a0d95ecc55"},
+    {file = "soupsieve-2.0.1.tar.gz", hash = "sha256:a59dc181727e95d25f781f0eb4fd1825ff45590ec8ff49eadfd7f1a537cc0232"},
+]
+tenacity = [
+    {file = "tenacity-6.2.0-py2.py3-none-any.whl", hash = "sha256:5a5d3dcd46381abe8b4f82b5736b8726fd3160c6c7161f53f8af7f1eb9b82173"},
+    {file = "tenacity-6.2.0.tar.gz", hash = "sha256:29ae90e7faf488a8628432154bb34ace1cca58244c6ea399fd33f066ac71339a"},
 ]
 urllib3 = [
     {file = "urllib3-1.25.11-py2.py3-none-any.whl", hash = "sha256:f5321fbe4bf3fefa0efd0bfe7fb14e90909eb62a48ccda331726b4319897dd5e"},
