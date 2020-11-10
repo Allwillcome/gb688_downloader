@@ -1,33 +1,36 @@
 import base64
 import re
-import time
 from datetime import datetime
 from pathlib import Path
 
 import requests
 from requests import Response
+from tenacity import retry, stop_after_attempt
+
 from .utils import filter_file
 
 
 class GBCore:
+    @retry(stop=stop_after_attempt(7))
+    def _get_bytes(self, hcno, i):
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1',
+        }
+        if i == 0:
+            url = f"http://c.gb688.cn/bzgk/gb/viewGb?type=online&hcno={hcno}"
+        else:
+            url = f"http://c.gb688.cn/bzgk/gb/viewGb?type=online&hcno={hcno}.00{i}"
+        return requests.get(url, headers=headers).text
+
     def get_bytes(self, hcno: str) -> bytes:
         """
         这部分代码可以在对 http://openstd.samr.gov.cn/bzgk/gb/index 网站的手机版预览模式下抓包获得
         :param hcno:
         :return:
         """
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1',
-        }
         text = ""
         for i in range(0, 10):
-            if i == 0:
-                url = f"http://c.gb688.cn/bzgk/gb/viewGb?type=online&hcno={hcno}"
-            else:
-                url = f"http://c.gb688.cn/bzgk/gb/viewGb?type=online&hcno={hcno}.00{i}"
-            time.sleep(1)
-
-            text += requests.get(url, headers=headers).text
+            text += self._get_bytes(hcno, i)
         pdf_bytes = base64.standard_b64decode(text)
         return pdf_bytes
 
@@ -194,7 +197,7 @@ class GB(GBCore):
                 'key': record['hcno'],
                 'name': record['cn_name'],
                 'standard_no': record['standard_no'],
-                'act_date': record['implement_date'].timestamp()*1000
+                'act_date': record['implement_date'].timestamp() * 1000
             }
             records.append(d)
         return {
