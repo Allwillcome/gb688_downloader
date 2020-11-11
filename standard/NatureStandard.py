@@ -3,12 +3,14 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
-
+from tempfile import TemporaryFile
+from io import BytesIO
 import requests
 from requests import Response
 from tenacity import retry, stop_after_attempt
 from bs4 import BeautifulSoup
-
+from PyPDF4 import PdfFileReader, PdfFileWriter
+from tqdm import trange
 from .utils import filter_file
 
 
@@ -222,24 +224,36 @@ class NatureStd:
         ).text
         return list(self.parse(text))
 
-    def detail_request(self, url: str) -> Response:
-        r = requests.get(url)
-        return r
-
     def get_pdf_url(self, url: str) -> str:
-        text = self.detail_request(url).text
+        text = requests.get(url).text
         pdf_url = re.findall(r"readPdf\('(.*?)'\)", text)[0]
-        print(pdf_url)
         return pdf_url
 
-    def _download(self, url: str, path):
+    def _get_pdf_page_size(self, url: str) -> int:
+        r = requests.get(url)
+        page = re.findall(r"size : parseInt\('(.*?)'\)", r.text)[0]
+        return int(page)
+
+    def _get_one_page_pdf(self, code: str, page: int) -> BytesIO:
         data = {
-            "code": "9ff2ebcdd35f1091657d3551921279ae",
-            "page": 1
+            "code": code,
+            "page": page,
         }
         r = requests.post("http://www.nrsis.org.cn/mnr_kfs/file/readPage", data=data)
-        print(r, r.text)
+        return BytesIO(base64.standard_b64decode(r.text))
 
-    def download(self, url, path):
+    def download(self, url: str, path):
         pdf_url = self.get_pdf_url(url)
-        self._download(pdf_url, path)
+        code = pdf_url.split("/")[-1]
+        page_size = self._get_pdf_page_size(pdf_url)
+
+        pdf_writer = PdfFileWriter()
+
+        for page in trange(1, page_size + 1):
+            first_page_io = self._get_one_page_pdf(code, page)
+            pdf_reader = PdfFileReader(first_page_io)
+            page_r = pdf_reader.getPage(0)
+            pdf_writer.addPage(page_r)
+
+        with open(path, "wb") as f:
+            pdf_writer.write(f)
