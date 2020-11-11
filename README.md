@@ -5,6 +5,11 @@
 自然资源来自[自然资源标准化信息服务平台](http://www.nrsis.org.cn/portal/xxcx/std)  
 国标的下载逻辑参考了[lzghzr](https://github.com/lzghzr/TampermonkeyJS/blob/master/GBdownload/GBdownload.user.js) 的油猴插件
 
+# 安装
+    git clone git@github.com:renmu123/gb688_downloader.git
+    cd gb688_downloader
+    poetry install # 如果没有安装 poerty，自行到官网进行安装
+
 # 示例
     from standard import GB, HDB, NatureStd
     
@@ -22,7 +27,7 @@
     
         std = NatureStd()
         std.search("")
-        std.download("http://www.nrsis.org.cn/portal/stdDetail/211166", "乡（镇）土地利用总体规划制图规范pdf")
+        std.download("http://www.nrsis.org.cn/portal/stdDetail/211166", "乡（镇）土地利用总体规划制图规范.pdf") #行标
         
 ## 地标和行标中的一些参数
 ## 地方标准中的`ministry`代号

@@ -1,17 +1,14 @@
 import base64
 import re
-from datetime import datetime
-from pathlib import Path
-from typing import Optional, Union
-from tempfile import TemporaryFile
 from io import BytesIO
+
 import requests
-from requests import Response
-from tenacity import retry, stop_after_attempt
-from bs4 import BeautifulSoup
 from PyPDF4 import PdfFileReader, PdfFileWriter
+from bs4 import BeautifulSoup
+from requests import Response
 from tqdm import trange
-from .utils import filter_file
+
+from .GB import GB
 
 
 class NatureStd:
@@ -224,10 +221,16 @@ class NatureStd:
         ).text
         return list(self.parse(text))
 
-    def get_pdf_url(self, url: str) -> str:
+    def get_pdf_info(self, url: str) -> dict:
         text = requests.get(url).text
-        pdf_url = re.findall(r"readPdf\('(.*?)'\)", text)[0]
-        return pdf_url
+        target_url = re.findall(r"readPdf\('(.*?)'\)", text)[0]
+        is_gb = False
+        if "gb688" in target_url:
+            is_gb = True
+        return {
+            "target_url": target_url,  # 目标地址，如果是国标则为gb688，否则就是pdf的地址
+            "is_gb": is_gb,  # 是否为国标
+        }
 
     def _get_pdf_page_size(self, url: str) -> int:
         r = requests.get(url)
@@ -242,10 +245,9 @@ class NatureStd:
         r = requests.post("http://www.nrsis.org.cn/mnr_kfs/file/readPage", data=data)
         return BytesIO(base64.standard_b64decode(r.text))
 
-    def download(self, url: str, path):
-        pdf_url = self.get_pdf_url(url)
-        code = pdf_url.split("/")[-1]
-        page_size = self._get_pdf_page_size(pdf_url)
+    def _download(self, url, path):
+        code = url.split("/")[-1]
+        page_size = self._get_pdf_page_size(url)
 
         pdf_writer = PdfFileWriter()
 
@@ -257,3 +259,15 @@ class NatureStd:
 
         with open(path, "wb") as f:
             pdf_writer.write(f)
+        return path
+
+    def download(self, url: str, path):
+        pdf_info = self.get_pdf_info(url)
+
+        if pdf_info["is_gb"]:
+            gb = GB()
+            path = gb._download(pdf_info["target_url"], path)
+        else:
+            path = self._download(pdf_info["target_url"], path)
+
+        return path
