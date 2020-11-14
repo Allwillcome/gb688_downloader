@@ -2,13 +2,15 @@ import base64
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 import requests
 from requests import Response
 from tenacity import retry, stop_after_attempt
 from tqdm import trange
 
+from .errors import DownloadError
+from .models import GBModel, GBSearchModel
 from .utils import filter_file
 
 
@@ -37,12 +39,12 @@ class GBCore:
         return pdf_bytes
 
     def _search(
-        self,
-        key: str,
-        page: int = 1,
-        size: int = 25,
-        sort_name: str = "circulation_date",
-        sort_type: str = "desc",
+            self,
+            key: str,
+            page: int = 1,
+            size: int = 25,
+            sort_name: str = "circulation_date",
+            sort_type: str = "desc",
     ) -> Response:
         """国标的下载
 
@@ -74,13 +76,13 @@ class GBCore:
         return r
 
     def search(
-        self,
-        key: str,
-        page: int = 1,
-        size: int = 25,
-        sort_name: str = "circulation_date",
-        sort_type: str = "desc",
-    ):
+            self,
+            key: str,
+            page: int = 1,
+            size: int = 25,
+            sort_name: str = "circulation_date",
+            sort_type: str = "desc",
+    ) -> GBSearchModel:
         """国标的下载
 
         :param key: 搜索内容
@@ -104,26 +106,27 @@ class GBCore:
         items = re.findall(
             r"<tr>([\s\S]*?)</tr>", r.text.replace("\r\n", "").replace("\t", "")
         )
-        records = []
+        records: List[GBModel] = []
         for item in items[5:-2]:
             data = re.findall(r"<td([\s\S]*?)</td>", item)
-            records.append(
-                {
-                    "hcno": re.findall(r"showInfo\('(.+?)'\);", data[1])[0],
-                    "caibiao_status": data[2] if data[2] != ">  " else "不采标",
-                    "standard_no": re.findall(r'\);">(.*?)</a>', data[1])[0],
-                    "cn_name": re.findall(r'\);">(.*?)</a>', data[3])[0],
-                    "standard_type": data[4].replace(">", ""),
-                    "status": re.findall("[\u4e00-\u9fa5]{2,4}", data[5])[0],
-                    "circulation_date": datetime.fromisoformat(
-                        data[6][:-2].replace(">", "")
-                    ),
-                    "implement_date": datetime.fromisoformat(
-                        data[7][:-2].replace(">", "")
-                    ),
-                }
+            hcno = re.findall(r"showInfo\('(.+?)'\);", data[1])[0]
+            gb_model = GBModel(
+                url=f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={hcno}",
+                hcno=hcno,
+                caibiao_status=data[2] if data[2] != ">  " else "不采标",
+                name=re.findall(r'\);">(.*?)</a>', data[3])[0],
+                std_type=data[4].replace(">", ""),
+                code=re.findall(r'\);">(.*?)</a>', data[1])[0],
+                act_time=datetime.fromisoformat(
+                    data[7][:-2].replace(">", "")
+                ),
+                pub_time=datetime.fromisoformat(
+                    data[6][:-2].replace(">", "")
+                ),
+                status=re.findall("[\u4e00-\u9fa5]{2,4}", data[5])[0]
             )
-        return {"total_size": total_size, "records": records}
+            records.append(gb_model)
+        return GBSearchModel(total_size=total_size, data=records)
 
 
 class GB(GBCore):
@@ -153,10 +156,9 @@ class GB(GBCore):
         :return:
         """
         r = requests.get(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={hcno}")
-        if "在线预览" in r.text:
-            return True
-        else:
-            return False
+        if "在线预览" not in r.text:
+            raise DownloadError("该文件无法下载")
+        return True
 
     def get_pdf_name(self, hcno: str) -> tuple:
         """获取pdf的名称
@@ -177,8 +179,7 @@ class GB(GBCore):
     def _download(self, url: str, path: Union[Path, str]):
         hcno = self.get_hcno(url)
 
-        if not self.can_download(hcno):
-            raise Exception("该文件源网页无法在线预览，故无法进行下载，请自行打开网页进行查询")
+        self.can_download(hcno)
 
         path = self.save(hcno, path)
         return path
@@ -196,8 +197,7 @@ class GB(GBCore):
         except IndexError:
             raise Exception("请关注您输入的网站是否包含hcno信息")
 
-        if not self.can_download(hcno):
-            raise Exception("该文件源网页无法在线预览，故无法进行下载，请自行打开网页进行查询")
+        self.can_download(hcno)
 
         # 文件处理
         folder = Path(folder)
@@ -216,12 +216,12 @@ class GB(GBCore):
 
     # 说实话这个函数不该放到这个类中
     def format_search_api(
-        self,
-        key: str,
-        page: int = 1,
-        size: int = 25,
-        sort_name: str = "circulation_date",
-        sort_type: str = "desc",
+            self,
+            key: str,
+            page: int = 1,
+            size: int = 25,
+            sort_name: str = "circulation_date",
+            sort_type: str = "desc",
     ):
         data = self.search(key, page, size, sort_name, sort_type)
         records = []

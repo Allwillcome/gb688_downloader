@@ -1,6 +1,7 @@
 import base64
 import re
 from io import BytesIO
+from typing import List, Iterator
 
 import requests
 from PyPDF4 import PdfFileReader, PdfFileWriter
@@ -9,6 +10,7 @@ from requests import Response
 from tqdm import trange
 
 from .GB import GB
+from .models import NatureStdModel, NatureStdSearchModel
 
 
 class NatureStd:
@@ -16,15 +18,15 @@ class NatureStd:
         pass
 
     def _search(
-        self,
-        key: str,
-        level: str = "",
-        status: str = "",
-        zxd: str = "",
-        pub_std_nuture_id: str = "",
-        tm_id: int = "",
-        page: int = 1,
-        size: int = 20,
+            self,
+            key: str,
+            level: str = "",
+            status: str = "",
+            zxd: str = "",
+            pub_std_nature_id: str = "",
+            tm_id: int = "",
+            page: int = 1,
+            size: int = 20,
     ) -> Response:
         """
 
@@ -32,7 +34,7 @@ class NatureStd:
         :param level: 标准层级，GB：国家标准，HB：行业标准
         :param status: 标准状态，即将实施，现行，废止
         :param zxd: 制修订，制定，修订
-        :param pub_std_nuture_id: 标准性质，推荐性，强制性，指导性技术文件
+        :param pub_std_nature_id: 标准性质，推荐性，强制性，指导性技术文件
         :param tm_id:归口单位，
             [{
               "text": "自然资源与国土空间规划(TC93)",
@@ -105,37 +107,40 @@ class NatureStd:
             "pageNo": page,
             "pageSize": size,
             "tmId": tm_id,
-            "pubStdNutureId": pub_std_nuture_id,
+            "pubStdNutureId": pub_std_nature_id,
             "repeFlag": status,
             "zxd": zxd,
         }
         r = requests.get("http://www.nrsis.org.cn/portal/xxcx/std", params=params)
         return r
 
-    def parse(self, value) -> dict:
+    def parse(self, value) -> Iterator[NatureStdModel]:
         table = BeautifulSoup(value, "html.parser").find(class_="table")
         for tr in table.find("tbody").find_all("tr"):
             data = tr.find_all("td")
-            yield {
-                "code": data[1].text,
-                "name": data[2].text,
-                "detail_url": f'http://www.nrsis.org.cn{data[2].find("a")["href"]}',
-                "pub_time": data[3].text,
-                "act_time": data[4].text,
-                "status": data[5].text,
-            }
+            yield NatureStdModel(
+                code=data[1].text,
+                name=data[2].text,
+                url=f'http://www.nrsis.org.cn{data[2].find("a")["href"]}',
+                pub_time=data[3].text,
+                act_time=data[4].text,
+                status=data[5].text
+            )
+
+    def get_total_size(self, value: str) -> int:
+        return int(re.findall(r"共(.*?)条数据，每页显示", value)[0])
 
     def search(
-        self,
-        key: str,
-        level: str = "",
-        status: str = "",
-        zxd: str = "",
-        pub_std_nuture_id: str = "",
-        tm_id: int = "",
-        page: int = 1,
-        size: int = 20,
-    ):
+            self,
+            key: str,
+            level: str = "",
+            status: str = "",
+            zxd: str = "",
+            pub_std_nuture_id: str = "",
+            tm_id: int = "",
+            page: int = 1,
+            size: int = 20,
+    ) -> NatureStdSearchModel:
         """
 
         :param key: 搜索关键字
@@ -214,12 +219,14 @@ class NatureStd:
             level=level,
             status=status,
             zxd=zxd,
-            pub_std_nuture_id=pub_std_nuture_id,
+            pub_std_nature_id=pub_std_nuture_id,
             tm_id=tm_id,
             page=page,
             size=size,
         ).text
-        return list(self.parse(text))
+        data = list(self.parse(text))
+        total_size = self.get_total_size(text)
+        return NatureStdSearchModel(total_size, data)
 
     def get_pdf_info(self, url: str) -> dict:
         text = requests.get(url).text
@@ -262,6 +269,7 @@ class NatureStd:
         return path
 
     def download(self, url: str, path):
+        print(url)
         pdf_info = self.get_pdf_info(url)
 
         if pdf_info["is_gb"]:

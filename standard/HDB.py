@@ -5,7 +5,7 @@ import requests
 from requests import Response
 
 from .utils import filter_file
-
+from .errors import DownloadError
 TYPE_MODE = Literal["hbba", "dbba"]
 STATUS = Literal["", "现行", "有更新版", "废止"]
 
@@ -17,7 +17,7 @@ class HDBCore:
         :param t: 区分行业或地区标准，参数，行业标准：hbba、地方标准：dbba
         """
         if t not in {'hbba', 'dbba'}:
-            raise Exception("t参数错误，请查询文档")
+            raise Exception("参数错误，只支持 hbba 和 dbba 两种参数")
         self.type = t
 
     def _search(self, key: str, status: STATUS = '', pubdate: str = '', ministry: str = '', industry: str = '',
@@ -51,6 +51,8 @@ class HDBCore:
     def get_file_response(self, pk: str) -> Response:
         url = f'http://{self.type}.sacinfo.org.cn/attachment/downloadStdFile?pk={pk}'
         r = requests.get(url)
+        if len(r.content) == 0:
+            raise DownloadError("该文件不支持下载")
         return r
 
 
@@ -66,13 +68,14 @@ class HDB(HDBCore):
             raise Exception("t参数错误，请查询文档")
         self.type = t
 
-    def can_download(self, pk: str) -> bool:
+    def _download(self, url, path):
+        pk = url.split("/")[-1]
         r = self.get_file_response(pk)
 
-        if len(r.content) == 0:
-            return False
-        else:
-            return True
+        with open(path, 'wb') as f:
+            f.write(r.content)
+
+        return path
 
     def download(self, pk: str, name: str, folder: Union[str, Path] = '.') -> Path:
         """
@@ -92,9 +95,6 @@ class HDB(HDBCore):
         file_path = folder / f'{name}.pdf'
 
         r = self.get_file_response(pk)
-
-        if len(r.content) == 0:
-            raise Exception("该文件源网页无法下载")
 
         with open(file_path, 'wb') as f:
             f.write(r.content)
