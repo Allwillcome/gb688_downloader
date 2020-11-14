@@ -11,7 +11,6 @@ from tqdm import trange
 
 from .errors import DownloadError
 from .models import GBModel, GBSearchModel
-from .utils import filter_file
 
 
 class GBCore:
@@ -176,7 +175,7 @@ class GB(GBCore):
             raise Exception("未找到标准号和标准名称")
         return g_name[0], c_name[0]
 
-    def _download(self, url: str, path: Union[Path, str]):
+    def download(self, url: str, path: Union[Path, str]):
         hcno = self.get_hcno(url)
 
         self.can_download(hcno)
@@ -184,90 +183,26 @@ class GB(GBCore):
         path = self.save(hcno, path)
         return path
 
-    def download(self, url: str, folder: Union[str, Path] = "", name: str = None):
-        """下载国标
-
-        :param name:
-        :param url:
-        :param folder:
-        :return:
-        """
-        try:
-            hcno = self.get_hcno(url)
-        except IndexError:
-            raise Exception("请关注您输入的网站是否包含hcno信息")
-
-        self.can_download(hcno)
-
-        # 文件处理
-        folder = Path(folder)
-        try:
-            folder.mkdir(exist_ok=True)
-        except FileNotFoundError:
-            print("请查看该文件的父目录是否已经被创建")
-
-        if name is None:
-            g_name, c_name = self.get_pdf_name(hcno)
-            name = f"{g_name}({c_name}).pdf"
-            name = filter_file(name)
-
-        path = self.save(hcno, folder / name)
-        return path
-
-    # 说实话这个函数不该放到这个类中
-    def format_search_api(
-            self,
-            key: str,
-            page: int = 1,
-            size: int = 25,
-            sort_name: str = "circulation_date",
-            sort_type: str = "desc",
-    ):
-        data = self.search(key, page, size, sort_name, sort_type)
-        records = []
-        for record in data["records"]:
-            d = {
-                "status": record["status"],
-                "key": record["hcno"],
-                "name": record["cn_name"],
-                "standard_no": record["standard_no"],
-                "act_date": record["implement_date"].timestamp() * 1000,
-            }
-            records.append(d)
-        return {"total_size": data["total_size"], "records": records}
-
-
-class GBTools(GB):
-    def __init__(self):
-        super().__init__()
-
-    def search_and_download(self, key: str, folder):
-        """搜索并进行下载
-
-        :param key: 关键词
-        :param folder: 保存文件夹
-        :return:
-        """
-
-        size = 10
-        records = self.search(key, page=1, size=10)
-        total_size = records["total_size"]
-        error_record = []
-
-        if total_size == 0:
-            print("未找到相关标准")
-            exit()
-
-        print(f"共搜索到{total_size}项，开始下载")
-        for page in range(1, (total_size // size + 2)):
-            print(f"现在正在下载{page}页")
-            for record in records["records"]:
-                try:
-                    self.download(
-                        f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}",
-                        folder,
-                    )
-                except Exception as e:
-                    print(e)
-                    error_record.append(record)
-                    continue
+# TODO:加入 tutorial
+# size = 10
+# records = self.search(key, page=1, size=10)
+# total_size = records["total_size"]
+# error_record = []
+#
+# if total_size == 0:
+#     print("未找到相关标准")
+#     exit()
+#
+# print(f"共搜索到{total_size}项，开始下载")
+# for page in range(1, (total_size // size + 2)):
+#     print(f"现在正在下载{page}页")
+#     for record in records["records"]:
+#         try:
+#             self.download(
+#                 f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}",
+#                 folder,
+#             )
+#         except Exception as e:
+#             print(e)
+#             error_record.append(record)
+#             continue

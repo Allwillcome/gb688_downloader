@@ -1,11 +1,11 @@
-from pathlib import Path
-from typing import Union, Literal
+from typing import Literal
 
 import requests
 from requests import Response
 
-from .utils import filter_file
 from .errors import DownloadError
+from .models import HDBModel, HDBSearchModel
+
 TYPE_MODE = Literal["hbba", "dbba"]
 STATUS = Literal["", "现行", "有更新版", "废止"]
 
@@ -21,7 +21,7 @@ class HDBCore:
         self.type = t
 
     def _search(self, key: str, status: STATUS = '', pubdate: str = '', ministry: str = '', industry: str = '',
-                current: int = 1, size: int = 15) -> Response:
+                page: int = 1, size: int = 15) -> Response:
         """这个函数用来对地方标准进行搜索，当值为空时，则默认为全部
 
         :param key: 搜索关键词
@@ -29,13 +29,13 @@ class HDBCore:
         :param pubdate: 备案日期，''、'-1'、'-3'、'-6'、'-12'、'-24'。这里的数字是代表一个月，即一个月内备案的标准，默认查询全部
         :param ministry: 地区代号请参考文档，默认查询全部
         :param industry: 行业代号请参考文档，默认查询全部
-        :param current:
+        :param page:
         :param size:
         :return:
         """
         url = f"http://{self.type}.sacinfo.org.cn/stdQueryList"
         data = {
-            'current': current,
+            'current': page,
             'size': size,
             'key': key,
             'status': status,
@@ -68,7 +68,7 @@ class HDB(HDBCore):
             raise Exception("t参数错误，请查询文档")
         self.type = t
 
-    def _download(self, url, path):
+    def download(self, url, path):
         pk = url.split("/")[-1]
         r = self.get_file_response(pk)
 
@@ -77,97 +77,68 @@ class HDB(HDBCore):
 
         return path
 
-    def download(self, pk: str, name: str, folder: Union[str, Path] = '.') -> Path:
-        """
-
-        :param pk:
-        :param name:
-        :param folder:
-        :return:
-        """
-        name = filter_file(name)
-        folder = Path(folder)
-        try:
-            folder.mkdir(exist_ok=True)
-        except FileNotFoundError:
-            print("请查看该文件的父目录是否已经被创建")
-
-        file_path = folder / f'{name}.pdf'
-
-        r = self.get_file_response(pk)
-
-        with open(file_path, 'wb') as f:
-            f.write(r.content)
-
-        return file_path
-
     def search(self, key: str, status: STATUS = '', pubdate: str = '', ministry: str = '', industry: str = '',
                current: int = 1, size: int = 15):
-        return self._search(key, status, pubdate, ministry, industry, current, size).json()
-
-    def format_search_api(self, key: str, status: STATUS = '', pubdate: str = '', ministry: str = '', industry: str = '',
-                          page: int = 1, size: int = 15):
-        data = self.search(key, status, pubdate, ministry, industry, page, size)
+        r = self._search(key, status, pubdate, ministry, industry, current, size).json()
         records = []
-        for record in data['records']:
-            d = {
-                'status': record['status'],
-                'key': record['pk'],
-                'name': record['chName'],
-                'standard_no': record['code'],
-                'act_date': record['actDate']
-            }
-            records.append(d)
-        return {
-            'pages': page,
-            'total_size': data['total'],
-            'records': records
-        }
+        for record in r["records"]:
+            records.append(HDBModel(
+                name=record["chName"],
+                code=record["code"],
+                pub_time=record["issueDate"],  # TODO:需要修改为date类型，现在是13位时间戳
+                act_time=record["actDate"],
+                status=record["status"],
+                pk=record["pk"],
+                url=f"http://{self.type}.sacinfo.org.cn/stdDetail/{record['pk']}",
+                charge_department=record["chargeDept"],
+                industry=record["industry"],
+                std_type=self.type
+            ))
+        return HDBSearchModel(
+            total_size=r["total"],
+            data=records
+        )
 
-
-class HDBTools(HDB):
-    def __init__(self, t: TYPE_MODE):
-        super(HDBTools, self).__init__(t)
-
-    def download_all(self, records, total, path, key) -> object:
-        """下载所有记录
-
-        :param key:
-        :param records:
-        :param total:
-        :param path:
-        :return:
-        """
-        if path is None:
-            path = filter_file(key)
-
-        error_record = []
-        for record in records:
-            name = f'{record["code"]}({record["chName"]})'
-            try:
-                print(f"正在下载{name}")
-                self.download(pk=record['pk'], name=name, folder=path)
-            except Exception:
-                print(f"{name}下载失败")
-                error_record.append(record)
-
-        print(f"共{len(records)}条记录，成功{len(records) - len(error_record)}条，失败{len(error_record)}条")
-        print(error_record)
-        return {
-            'total': total,
-            'error_code': error_record
-        }
-
-    def search_and_download(self, key: str, path=None):
-        """搜索关键字并下载所有内容
-
-        :param key: 关键字
-        :param path: 路径
-        :return:
-        """
-        total = self._search(key, current=1, size=100).json()['total']
-        records = self._search(key, current=1, size=total).json()['records']
-        if not records:
-            return False
-
-        return self.download_all(records, total, path, key)
+# TODO:加入 tutorial
+# def download_all(self, records, total, path, key) -> object:
+#     """下载所有记录
+#
+#     :param key:
+#     :param records:
+#     :param total:
+#     :param path:
+#     :return:
+#     """
+#     if path is None:
+#         path = filter_file(key)
+#
+#     error_record = []
+#     for record in records:
+#         name = f'{record["code"]}({record["chName"]})'
+#         try:
+#             print(f"正在下载{name}")
+#             self.download(pk=record['pk'], name=name, folder=path)
+#         except Exception:
+#             print(f"{name}下载失败")
+#             error_record.append(record)
+#
+#     print(f"共{len(records)}条记录，成功{len(records) - len(error_record)}条，失败{len(error_record)}条")
+#     print(error_record)
+#     return {
+#         'total': total,
+#         'error_code': error_record
+#     }
+#
+# def search_and_download(self, key: str, path=None):
+#     """搜索关键字并下载所有内容
+#
+#     :param key: 关键字
+#     :param path: 路径
+#     :return:
+#     """
+#     total = self._search(key, current=1, size=100).json()['total']
+#     records = self._search(key, current=1, size=total).json()['records']
+#     if not records:
+#         return False
+#
+#     return self.download_all(records, total, path, key)

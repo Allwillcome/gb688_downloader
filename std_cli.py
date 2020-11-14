@@ -27,20 +27,17 @@ class DownloadCommand(Command):
         self.line("开始下载，请稍等")
         if "hbba" in url:  # 行标
             std = HDB("hbba")
-            std._download(url, path)
         elif "dbba" in url:  # 地标
             std = HDB("dbba")
-            std._download(url, path)
         elif "openstd.samr" in url:  # 国标
             std = GB()
-            std._download(url, path)
         elif "nrsis.org.cn" in url:  # 自然标准
             std = NatureStd()
-            std.download(url, path)
         else:
             self.line("<info>目前暂不支持此标准</info>")
             return 1
 
+        std.download(url, path)
         self.line("下载完成了")
         return 0
 
