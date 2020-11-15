@@ -4,3 +4,4 @@ venv
 main.spec
 .idea
 .venv
+std_cli.spec

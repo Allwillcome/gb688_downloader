@@ -7,13 +7,13 @@ authors = ["renmu123 <19961017fyx>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.24.0"
-prettytable = "^1.0.1"
 Flask-Cors = "^3.0.9"
 tenacity = "^6.2.0"
 beautifulsoup4 = "^4.9.3"
 PyPDF4 = "^1.27.0"
 tqdm = "^4.51.0"
 cleo = "^0.8.1"
+PrettyTable = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 PyInstaller = "^4.0"
