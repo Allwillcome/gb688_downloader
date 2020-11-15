@@ -116,16 +116,20 @@ class NatureStd:
 
     def parse(self, value) -> Iterator[NatureStdModel]:
         table = BeautifulSoup(value, "html.parser").find(class_="table")
+        std_items = []
         for tr in table.find("tbody").find_all("tr"):
             data = tr.find_all("td")
-            yield NatureStdModel(
-                code=data[1].text,
-                name=data[2].text,
-                url=f'http://www.nrsis.org.cn{data[2].find("a")["href"]}',
-                pub_time=data[3].text,
-                act_time=data[4].text,
-                status=data[5].text
+            std_items.append(
+                NatureStdModel(
+                    code=data[1].text,
+                    name=data[2].text,
+                    url=f'http://www.nrsis.org.cn{data[2].find("a")["href"]}',
+                    pub_time=data[3].text,
+                    act_time=data[4].text,
+                    status=data[5].text
+                )
             )
+        return std_items
 
     def get_total_size(self, value: str) -> int:
         return int(re.findall(r"共(.*?)条数据，每页显示", value)[0])
@@ -224,8 +228,11 @@ class NatureStd:
             page=page,
             size=size,
         ).text
-        data = list(self.parse(text))
         total_size = self.get_total_size(text)
+        if total_size == 0:
+            data = []
+        else:
+            data = self.parse(text)
         return NatureStdSearchModel(total_size, data)
 
     def get_pdf_info(self, url: str) -> dict:

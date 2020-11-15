@@ -4,27 +4,28 @@ from cleo import Application, Command
 from prettytable import PrettyTable
 
 from standard import GB, HDB, NatureStd
+from standard.errors import DownloadError
 
 
+# TODO: 文件命名，要对 detail_url 进行解析
 class DownloadCommand(Command):
     """
     下载某个标准
 
     download
-        {url : 需要下载的标准网址}
-        {--p|path=? : 保存的路径}
+        {url : 需要下载标准的网址}
+        {path : 保存的路径}
+        {--o|over : 如果路径已存在，是否覆盖？}
     """
 
     def handle(self):
         url = self.argument("url")
-        if path := self.option("path"):
-            path = Path(path)
-            if not path.parent.is_dir():
-                raise FileNotFoundError("没有找到该文件夹")
-        else:
-            path = Path(".") / "aa.pdf"
+        path = Path(self.argument("path"))
+        over = self.option("over")
+        if path.is_file() and over is False:
+            if not self.confirm('该文件已存在，是否继续？', False):
+                return 0
 
-        self.line("开始下载，请稍等")
         if "hbba" in url:  # 行标
             std = HDB("hbba")
         elif "dbba" in url:  # 地标
@@ -37,14 +38,12 @@ class DownloadCommand(Command):
             self.line("<info>目前暂不支持此标准</info>")
             return 1
 
+        self.line("开始下载，请稍等")
         std.download(url, path)
         self.line("下载完成了")
         return 0
 
 
-# TODO: 翻页功能实现
-# TODO: 几种标准的适配，现在只支持 natureStd
-# TODO: 三个平台下文件创建问题
 class SearchCommand(Command):
     """
     search
@@ -59,49 +58,70 @@ class SearchCommand(Command):
 
     def handle(self):
         page = 1
-        size = {
-            "gb": 10,
-            "hdb": 15,
-            "natureStd": 20
-        }
+        size = {"gb": 10, "hb": 15, "db": 15, "natureStd": 20}
         q = self.argument("query")
         platform = self.option("platform")
-        if not platform:
-            platform = self.choice("选择你要搜索的平台", ["hb", "db", "gb", "natureStd"])
-
-        if platform not in {"hb", "db", "gb", "natureStd"}:
-            self.line('请输入正确的platform参数，支持 "hb", "db", "gb", "natureStd" 这四种参数')
-            platform = self.choice("选择你要搜索的平台", ["hb", "db", "gb", "natureStd"])
+        mkdir = self.option("mkdir")
 
         if folder := self.option("folder"):
             folder = Path(folder)
-            if not folder.is_dir():
-                raise FileExistsError("folder不是一个文件夹")
+
+            if mkdir is False:
+                if not folder.exists():
+                    self.line("<error>folder 文件夹不存在</error>")
+                    return 0
+                if folder.is_file():
+                    self.line("<error>folder 不是文件夹</error>")
+                    return 0
             else:
-                if mkdir := self.option("mkdir"):
-                    folder.mkdir(parents=mkdir, exist_ok=self.option("exist"))
+                folder.mkdir(parents=mkdir, exist_ok=self.option("exist"))
         else:
             folder = Path(".")
 
+        if not platform:
+            platform = self.choice("选择你要搜索的平台", ["gb", "hb", "db", "natureStd"])
+
+        if platform not in {"hb", "db", "gb", "natureStd"}:
+            self.line('请输入正确的platform参数，支持 "hb", "db", "gb", "natureStd" 这四种参数')
+            platform = self.choice("选择你要搜索的平台", ["gb", "hb", "db", "natureStd"])
+
         if platform == "hb":
             std = HDB("hbba")
-            data = std.search(q)
         elif platform == "db":
             std = HDB("dbba")
-            data = std.search(q)
         elif platform == "gb":
             std = GB()
-            data = std.search(q)
         elif platform == "natureStd":
             std = NatureStd()
-            data = std.search(q)
         else:
             return 0
 
+        data = self._search(std, platform, q, page, size)
+        self._handle(std, platform, q, folder, page, size, data)
+
+    def _search(self, std, platform, q, page, size):
+        if platform == "hb":
+            data = std.search(q, page=page, size=size["hb"])
+        elif platform == "db":
+            data = std.search(q, page=page, size=size["db"])
+        elif platform == "gb":
+            data = std.search(q, page=page, size=size["gb"])
+        elif platform == "natureStd":
+            data = std.search(q, page=page, size=size["natureStd"])
+        else:
+            return 0
+        return data
+
+    def _handle(
+            self, std, platform, q: str, folder: Path, page: int, size: dict, data
+    ) -> int:
         self.line(f"共找到{data.total_size}条数据")
+        if data.total_size == 0:
+            self.line("啥都没找到，那就退出了")
+            return 1
 
         tb = PrettyTable()
-        tb.field_names = ['序号', '标准名', '标准号']
+        tb.field_names = ["序号", "标准名", "标准号"]
         for index, stdItem in enumerate(data.data, 1):
             tb.add_row([index, stdItem.name, stdItem.code])
         self.line(tb.get_string())
@@ -119,17 +139,39 @@ class SearchCommand(Command):
             else:
                 raise ValueError("参数错误")
         if start == 0:
-            self.line("向下翻页")
+            if page * size[platform] <= data.total_size:
+                page += 1
+                self.line(f"向下翻页, 现在是第{page}页")
+                data = self._search(std, platform, q, page, size)
+            else:
+                page = page
+                self.line(f"<info>现在已经是最大页数，不能再翻页了</info>")
+                data = data
+
+            self._handle(std, platform, q, folder, page, size, data)
             return 1
         if start == -1:
-            self.line("向上翻页")
+            if page == 1:
+                page = page
+                self.line(f"<info>现在已经是最小页数了，不能再翻页了</info>")
+                data = data
+            else:
+                page -= 1
+                self.line(f"向上翻页, 现在是第{page}页")
+                data = self._search(std, platform, q, page, size)
+
+            self._handle(std, platform, q, folder, page, size, data)
             return 1
 
-        self.line(f"共有{end - start + 1}个标准需要下载")
-        for index, stdItem in enumerate(data.data[start - 1:end], 1):
+        self.line(f"共有{end - start + 1}个标准需要下载\n")
+        for index, stdItem in enumerate(data.data[start - 1: end], 1):
             self.line(f"正在下载第{index}个标准")
-            std.download(stdItem.url, path=folder / f"{stdItem.name}.pdf")
-        self.line(f"{end - start + 1}10个标准都下载完成了，保存在{folder.absolute()}文件下")
+            try:
+                std.download(stdItem.url, path=folder / f"{stdItem.name}.pdf")
+            except DownloadError:
+                self.line(f"第{index}个文件下载失败，大概率是源文件不支持下载")
+
+        self.line(f"标准都下载完成了，保存在 {folder.absolute()} 文件下")
 
 
 application = Application()

@@ -78,8 +78,8 @@ class HDB(HDBCore):
         return path
 
     def search(self, key: str, status: STATUS = '', pubdate: str = '', ministry: str = '', industry: str = '',
-               current: int = 1, size: int = 15):
-        r = self._search(key, status, pubdate, ministry, industry, current, size).json()
+               page: int = 1, size: int = 15):
+        r = self._search(key, status, pubdate, ministry, industry, page, size).json()
         records = []
         for record in r["records"]:
             records.append(HDBModel(
