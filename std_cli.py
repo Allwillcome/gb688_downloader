@@ -174,7 +174,7 @@ class SearchCommand(Command):
         self.line(f"标准都下载完成了，保存在 {folder.absolute()} 文件下")
 
 
-application = Application()
+application = Application("std_cli", "1.0")
 application.add(DownloadCommand())
 application.add(SearchCommand())
 

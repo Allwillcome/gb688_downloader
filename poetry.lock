@@ -515,7 +515,7 @@ type = "legacy"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 
 [metadata]
-content-hash = "fffeae28c31d45cd33fbabab0f644b1f005df692fa4ea5902d7cddfc57368b81"
+content-hash = "301a4762390fc0a05710c0d7b3521872569f2c4baf33cda7ceb1b21abda8ca5c"
 lock-version = "1.0"
 python-versions = "^3.8"
 

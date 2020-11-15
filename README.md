@@ -3,14 +3,24 @@
 国家标准可以来自[国家标准全文系统](http://openstd.samr.gov.cn/bzgk/gb/index)
 行业标准、地方标准来自[全国标准信息公共服务平台](http://std.samr.gov.cn/)
 自然资源来自[自然资源标准化信息服务平台](http://www.nrsis.org.cn/portal/xxcx/std)  
-国标的下载逻辑参考了[lzghzr](https://github.com/lzghzr/TampermonkeyJS/blob/master/GBdownload/GBdownload.user.js) 的油猴插件
 
 # 安装
     git clone git@github.com:renmu123/gb688_downloader.git
     cd gb688_downloader
     poetry install # 如果没有安装 poerty，自行到官网进行安装
 
-# 示例
+# cli 示例
+    # 进入虚拟环境
+    poetry shell
+    # 下载标准
+    python std_cli.py download http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=8DE982AF0ED306A4033F37C219E6FCF3 城乡居民基本养老保险个人账户管理规范.pdf
+    # help
+    python std_cli.py help
+    
+    # 搜索内容，默认保存在当前文件夹
+    python std_cli.py search 养老
+
+# api 示例
     from standard import GB, HDB, NatureStd
     
     if __name__ == '__main__':
@@ -187,17 +197,10 @@
 | 认证认可                 	|
 | 消防救援                 	|
 | 减灾救灾与综合性应急管理 	|
-# TODO
-- [x] 支持行业标准、地方标准的下载
-- [x] 支持自然资源标准下载
-- [x] 对 input 进行异常处理
-- [x] 对不提供下载的国标、行标、地标进行处理
-- [x] 搜索的时候支持翻页功能
-- [x] 将三者的搜索下载集合在一起
-- [x] 支持批量下载
-- [x] 重构
-- [x] 使用Tkinter构建GUI程序
 
+
+# 致谢
+国标的下载逻辑参考了[lzghzr](https://github.com/lzghzr/TampermonkeyJS/blob/master/GBdownload/GBdownload.user.js) 的油猴插件
 
 # 免责声明
 **本项目仅供学习交流之用，请勿用于非法用途。**

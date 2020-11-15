@@ -8,7 +8,6 @@ authors = ["renmu123 <19961017fyx>"]
 python = "^3.8"
 requests = "^2.24.0"
 prettytable = "^1.0.1"
-flask = "^1.1.2"
 Flask-Cors = "^3.0.9"
 tenacity = "^6.2.0"
 beautifulsoup4 = "^4.9.3"
