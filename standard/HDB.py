@@ -16,12 +16,20 @@ class HDBCore:
 
         :param t: 区分行业或地区标准，参数，行业标准：hbba、地方标准：dbba
         """
-        if t not in {'hbba', 'dbba'}:
+        if t not in {"hbba", "dbba"}:
             raise Exception("参数错误，只支持 hbba 和 dbba 两种参数")
         self.type = t
 
-    def _search(self, key: str, status: STATUS = '', pubdate: str = '', ministry: str = '', industry: str = '',
-                page: int = 1, size: int = 15) -> Response:
+    def _search(
+        self,
+        key: str,
+        status: STATUS = "",
+        pubdate: str = "",
+        ministry: str = "",
+        industry: str = "",
+        page: int = 1,
+        size: int = 15,
+    ) -> Response:
         """这个函数用来对地方标准进行搜索，当值为空时，则默认为全部
 
         :param key: 搜索关键词
@@ -35,21 +43,21 @@ class HDBCore:
         """
         url = f"http://{self.type}.sacinfo.org.cn/stdQueryList"
         data = {
-            'current': page,
-            'size': size,
-            'key': key,
-            'status': status,
-            'ministry': ministry,
-            'industry': industry,
-            'pubdate': pubdate,
-            'date': ''
+            "current": page,
+            "size": size,
+            "key": key,
+            "status": status,
+            "ministry": ministry,
+            "industry": industry,
+            "pubdate": pubdate,
+            "date": "",
         }
 
         r = requests.post(url, data=data)
         return r
 
     def get_file_response(self, pk: str) -> Response:
-        url = f'http://{self.type}.sacinfo.org.cn/attachment/downloadStdFile?pk={pk}'
+        url = f"http://{self.type}.sacinfo.org.cn/attachment/downloadStdFile?pk={pk}"
         r = requests.get(url)
         if len(r.content) == 0:
             raise DownloadError("该文件不支持下载")
@@ -64,7 +72,7 @@ class HDB(HDBCore):
         """
         super(HDB, self).__init__(t)
 
-        if t not in {'hbba', 'dbba'}:
+        if t not in {"hbba", "dbba"}:
             raise Exception("t参数错误，请查询文档")
         self.type = t
 
@@ -72,32 +80,40 @@ class HDB(HDBCore):
         pk = url.split("/")[-1]
         r = self.get_file_response(pk)
 
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             f.write(r.content)
 
         return path
 
-    def search(self, key: str, status: STATUS = '', pubdate: str = '', ministry: str = '', industry: str = '',
-               page: int = 1, size: int = 15):
+    def search(
+        self,
+        key: str,
+        status: STATUS = "",
+        pubdate: str = "",
+        ministry: str = "",
+        industry: str = "",
+        page: int = 1,
+        size: int = 15,
+    ):
         r = self._search(key, status, pubdate, ministry, industry, page, size).json()
         records = []
         for record in r["records"]:
-            records.append(HDBModel(
-                name=record["chName"],
-                code=record["code"],
-                pub_time=record["issueDate"],  # TODO:需要修改为date类型，现在是13位时间戳
-                act_time=record["actDate"],
-                status=record["status"],
-                pk=record["pk"],
-                url=f"http://{self.type}.sacinfo.org.cn/stdDetail/{record['pk']}",
-                charge_department=record["chargeDept"],
-                industry=record["industry"],
-                std_type=self.type
-            ))
-        return HDBSearchModel(
-            total_size=r["total"],
-            data=records
-        )
+            records.append(
+                HDBModel(
+                    name=record["chName"],
+                    code=record["code"],
+                    pub_time=record["issueDate"],  # TODO:需要修改为date类型，现在是13位时间戳
+                    act_time=record["actDate"],
+                    status=record["status"],
+                    pk=record["pk"],
+                    url=f"http://{self.type}.sacinfo.org.cn/stdDetail/{record['pk']}",
+                    charge_department=record["chargeDept"],
+                    industry=record["industry"],
+                    std_type=self.type,
+                )
+            )
+        return HDBSearchModel(total_size=r["total"], data=records)
+
 
 # TODO:加入 tutorial
 # def download_all(self, records, total, path, key) -> object:

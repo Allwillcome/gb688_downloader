@@ -20,6 +20,7 @@ class StdModel:
 class NatureStdModel(StdModel):
     pass
 
+
 @dataclass
 class NatureStdSearchModel:
     total_size: int
@@ -28,7 +29,7 @@ class NatureStdSearchModel:
     def dict(self):
         return {
             "total_size": self.total_size,
-            "data": [row.__dict__ for row in self.data]
+            "data": [row.__dict__ for row in self.data],
         }
 
 
@@ -47,7 +48,7 @@ class GBSearchModel:
     def dict(self):
         return {
             "total_size": self.total_size,
-            "data": [row.__dict__ for row in self.data]
+            "data": [row.__dict__ for row in self.data],
         }
 
 
@@ -67,5 +68,5 @@ class HDBSearchModel:
     def dict(self):
         return {
             "total_size": self.total_size,
-            "data": [row.__dict__ for row in self.data]
+            "data": [row.__dict__ for row in self.data],
         }

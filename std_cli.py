@@ -26,7 +26,7 @@ class DownloadCommand(Command):
         path = Path(self.argument("path"))
         over = self.option("over")
         if path.is_file() and over is False:
-            if not self.confirm('该文件已存在，是否继续？', False):
+            if not self.confirm("该文件已存在，是否继续？", False):
                 return 0
 
         if "hbba" in url:  # 行标
@@ -122,7 +122,7 @@ class SearchCommand(Command):
         return data
 
     def _handle(
-            self, std, platform, q: str, folder: Path, page: int, size: dict, data
+        self, std, platform, q: str, folder: Path, page: int, size: dict, data
     ) -> int:
         self.line(f"共找到{data.total_size}条数据")
         if data.total_size == 0:
@@ -173,7 +173,7 @@ class SearchCommand(Command):
             return 1
 
         self.line(f"共有{end - start + 1}个标准需要下载\n")
-        for index, stdItem in enumerate(data.data[start - 1: end], 1):
+        for index, stdItem in enumerate(data.data[start - 1 : end], 1):
             self.line(f"正在下载第{index}个标准")
             try:
                 std.download(stdItem.url, path=folder / f"{stdItem.name}.pdf")

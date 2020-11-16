@@ -38,12 +38,12 @@ class GBCore:
         return pdf_bytes
 
     def _search(
-            self,
-            key: str,
-            page: int = 1,
-            size: int = 25,
-            sort_name: str = "circulation_date",
-            sort_type: str = "desc",
+        self,
+        key: str,
+        page: int = 1,
+        size: int = 25,
+        sort_name: str = "circulation_date",
+        sort_type: str = "desc",
     ) -> Response:
         """国标的下载
 
@@ -75,12 +75,12 @@ class GBCore:
         return r
 
     def search(
-            self,
-            key: str,
-            page: int = 1,
-            size: int = 25,
-            sort_name: str = "circulation_date",
-            sort_type: str = "desc",
+        self,
+        key: str,
+        page: int = 1,
+        size: int = 25,
+        sort_name: str = "circulation_date",
+        sort_type: str = "desc",
     ) -> GBSearchModel:
         """国标的下载
 
@@ -116,13 +116,9 @@ class GBCore:
                 name=re.findall(r'\);">(.*?)</a>', data[3])[0],
                 std_type=data[4].replace(">", ""),
                 code=re.findall(r'\);">(.*?)</a>', data[1])[0],
-                act_time=datetime.fromisoformat(
-                    data[7][:-2].replace(">", "")
-                ),
-                pub_time=datetime.fromisoformat(
-                    data[6][:-2].replace(">", "")
-                ),
-                status=re.findall("[\u4e00-\u9fa5]{2,4}", data[5])[0]
+                act_time=datetime.fromisoformat(data[7][:-2].replace(">", "")),
+                pub_time=datetime.fromisoformat(data[6][:-2].replace(">", "")),
+                status=re.findall("[\u4e00-\u9fa5]{2,4}", data[5])[0],
             )
             records.append(gb_model)
         return GBSearchModel(total_size=total_size, data=records)
@@ -182,6 +178,7 @@ class GB(GBCore):
 
         path = self.save(hcno, path)
         return path
+
 
 # TODO:加入 tutorial
 # size = 10

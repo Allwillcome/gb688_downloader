@@ -18,15 +18,15 @@ class NatureStd:
         pass
 
     def _search(
-            self,
-            key: str,
-            level: str = "",
-            status: str = "",
-            zxd: str = "",
-            pub_std_nature_id: str = "",
-            tm_id: int = "",
-            page: int = 1,
-            size: int = 20,
+        self,
+        key: str,
+        level: str = "",
+        status: str = "",
+        zxd: str = "",
+        pub_std_nature_id: str = "",
+        tm_id: int = "",
+        page: int = 1,
+        size: int = 20,
     ) -> Response:
         """
 
@@ -126,7 +126,7 @@ class NatureStd:
                     url=f'http://www.nrsis.org.cn{data[2].find("a")["href"]}',
                     pub_time=data[3].text,
                     act_time=data[4].text,
-                    status=data[5].text
+                    status=data[5].text,
                 )
             )
         return std_items
@@ -135,15 +135,15 @@ class NatureStd:
         return int(re.findall(r"共(.*?)条数据，每页显示", value)[0])
 
     def search(
-            self,
-            key: str,
-            level: str = "",
-            status: str = "",
-            zxd: str = "",
-            pub_std_nuture_id: str = "",
-            tm_id: int = "",
-            page: int = 1,
-            size: int = 20,
+        self,
+        key: str,
+        level: str = "",
+        status: str = "",
+        zxd: str = "",
+        pub_std_nuture_id: str = "",
+        tm_id: int = "",
+        page: int = 1,
+        size: int = 20,
     ) -> NatureStdSearchModel:
         """
 

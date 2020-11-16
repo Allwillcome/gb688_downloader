@@ -1,6 +1,6 @@
 from standard import GB, HDB, NatureStd
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     gb = GB()
     gb.search("养老")
     # gb.download('http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=D8AB02F0141FE11A4976E0E94FCF58B4')
