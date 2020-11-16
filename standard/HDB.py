@@ -1,4 +1,5 @@
 from typing import Literal
+from datetime import datetime
 
 import requests
 from requests import Response
@@ -102,8 +103,8 @@ class HDB(HDBCore):
                 HDBModel(
                     name=record["chName"],
                     code=record["code"],
-                    pub_time=record["issueDate"],  # TODO:需要修改为date类型，现在是13位时间戳
-                    act_time=record["actDate"],
+                    pub_time=datetime.fromtimestamp(record["issueDate"]/1000).date(),
+                    act_time=datetime.fromtimestamp(record["actDate"]/1000).date(),
                     status=record["status"],
                     pk=record["pk"],
                     url=f"http://{self.type}.sacinfo.org.cn/stdDetail/{record['pk']}",
