@@ -7,7 +7,6 @@ authors = ["renmu123 <19961017fyx>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.24.0"
-Flask-Cors = "^3.0.9"
 tenacity = "^6.2.0"
 beautifulsoup4 = "^4.9.3"
 PyPDF4 = "^1.27.0"
