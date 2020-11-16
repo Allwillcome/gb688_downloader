@@ -189,7 +189,7 @@ class SearchCommand(Command):
         self.line(Fore.YELLOW + text)
 
 
-application = Application("std_cli", "1.0")
+application = Application("std_cli", "2.1")
 application.add(DownloadCommand())
 application.add(SearchCommand())
 

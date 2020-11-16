@@ -9,7 +9,13 @@
     cd gb688_downloader
     poetry install # 如果没有安装 poerty，自行到官网进行安装
 
-# cli 示例
+# win cli 示例
+    # 去 releases (https://github.com/renmu123/gb688_downloader/releases) 下载最新命令行程序
+    std_cli.exe help # 查看教程
+    std_cli.exe download help  # 直接从页面下载
+    std_cli.exe search help  # 搜索下载
+
+# 源码 cli 示例
     # 进入虚拟环境
     poetry shell
     # 下载标准
