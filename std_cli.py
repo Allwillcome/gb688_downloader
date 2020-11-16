@@ -1,10 +1,13 @@
 from pathlib import Path
 
 from cleo import Application, Command
+from colorama import Fore, init
 from prettytable import PrettyTable
 
 from standard import GB, HDB, NatureStd
 from standard.errors import DownloadError
+
+init(autoreset=True)
 
 
 # TODO: 文件命名，要对 detail_url 进行解析
@@ -35,13 +38,19 @@ class DownloadCommand(Command):
         elif "nrsis.org.cn" in url:  # 自然标准
             std = NatureStd()
         else:
-            self.line("<info>目前暂不支持此标准</info>")
+            self.info("目前暂不支持此标准")
             return 1
 
         self.line("开始下载，请稍等")
         std.download(url, path)
         self.line("下载完成了")
         return 0
+
+    def error(self, text):
+        self.line(Fore.RED + text)
+
+    def info(self, text):
+        self.line(Fore.YELLOW + text)
 
 
 class SearchCommand(Command):
@@ -53,7 +62,7 @@ class SearchCommand(Command):
         {--p|platform= : 查询的平台}
         {--f|folder= : 保存的文件夹}
         {--m|mkdir : 则找不到的父级目录会导致 FileNotFoundError 被抛出。}
-        {--e|exist : 则在目标已存在的情况下抛出 FileExistsError。详情参照：https://docs.python.org/zh-cn/3/library/pathlib.html#pathlib.Path.mkdir}
+        {--e|exist : 则在目标已存在的情况下抛出 FileExistsError。详情参照：https://docs.python.org/zh-cn/3/library/pathlib.html#pathlib.Path.mkdir} # noqa
     """
 
     def handle(self):
@@ -68,10 +77,10 @@ class SearchCommand(Command):
 
             if mkdir is False:
                 if not folder.exists():
-                    self.line("<error>folder 文件夹不存在</error>")
+                    self.error("folder 文件夹不存在")
                     return 0
                 if folder.is_file():
-                    self.line("<error>folder 不是文件夹</error>")
+                    self.error("folder 不是文件夹")
                     return 0
             else:
                 folder.mkdir(parents=mkdir, exist_ok=self.option("exist"))
@@ -82,7 +91,7 @@ class SearchCommand(Command):
             platform = self.choice("选择你要搜索的平台", ["gb", "hb", "db", "natureStd"])
 
         if platform not in {"hb", "db", "gb", "natureStd"}:
-            self.line('请输入正确的platform参数，支持 "hb", "db", "gb", "natureStd" 这四种参数')
+            self.error('请输入正确的platform参数，支持 "hb", "db", "gb", "natureStd" 这四种参数')
             platform = self.choice("选择你要搜索的平台", ["gb", "hb", "db", "natureStd"])
 
         if platform == "hb":
@@ -99,7 +108,7 @@ class SearchCommand(Command):
         data = self._search(std, platform, q, page, size)
         self._handle(std, platform, q, folder, page, size, data)
 
-    def _search(self, std, platform, q, page, size):
+    def _search(self, std, platform, q, page, size):  # noqa
         if platform == "hb":
             data = std.search(q, page=page, size=size["hb"])
         elif platform == "db":
@@ -117,7 +126,7 @@ class SearchCommand(Command):
     ) -> int:
         self.line(f"共找到{data.total_size}条数据")
         if data.total_size == 0:
-            self.line("啥都没找到，那就退出了")
+            self.error("啥都没找到，那就退出了")
             return 1
 
         tb = PrettyTable()
@@ -145,7 +154,7 @@ class SearchCommand(Command):
                 data = self._search(std, platform, q, page, size)
             else:
                 page = page
-                self.line(f"<info>现在已经是最大页数，不能再翻页了</info>")
+                self.info(f"现在已经是最大页数，不能再翻页了")
                 data = data
 
             self._handle(std, platform, q, folder, page, size, data)
@@ -153,7 +162,7 @@ class SearchCommand(Command):
         if start == -1:
             if page == 1:
                 page = page
-                self.line(f"<info>现在已经是最小页数了，不能再翻页了</info>")
+                self.info(f"现在已经是最小页数了，不能再翻页了")
                 data = data
             else:
                 page -= 1
@@ -172,6 +181,12 @@ class SearchCommand(Command):
                 self.line(f"第{index}个文件下载失败，大概率是源文件不支持下载")
 
         self.line(f"标准都下载完成了，保存在 {folder.absolute()} 文件下")
+
+    def error(self, text):
+        self.line(Fore.RED + text)
+
+    def info(self, text):
+        self.line(Fore.YELLOW + text)
 
 
 application = Application("std_cli", "1.0")
