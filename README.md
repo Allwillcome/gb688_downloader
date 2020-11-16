@@ -38,7 +38,11 @@
         std = NatureStd()
         std.search("")
         std.download("http://www.nrsis.org.cn/portal/stdDetail/211166", "乡（镇）土地利用总体规划制图规范.pdf") #行标
-        
+
+# 打包
+    # 下面的打包方法很有可能报错，解决方法参考这个 issue(https://github.com/jazzband/prettytable/issues/82)
+    pyinstaller -F std_cli.py
+
 ## 地标和行标中的一些参数
 ## 地方标准中的`ministry`代号
 
