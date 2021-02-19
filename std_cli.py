@@ -33,8 +33,8 @@ class DownloadCommand(Command):
             std = HDB("hbba")
         elif "dbba" in url:  # 地标
             std = HDB("dbba")
-        elif "openstd.samr" in url:  # 国标
-            std = GB()
+        # elif "openstd.samr" in url:  # 国标
+        #     std = GB()
         elif "nrsis.org.cn" in url:  # 自然标准
             std = NatureStd()
         else:
@@ -88,18 +88,18 @@ class SearchCommand(Command):
             folder = Path(".")
 
         if not platform:
-            platform = self.choice("选择你要搜索的平台", ["gb", "hb", "db", "natureStd"])
+            platform = self.choice("选择你要搜索的平台", ["hb", "db", "natureStd"])
 
-        if platform not in {"hb", "db", "gb", "natureStd"}:
-            self.error('请输入正确的platform参数，支持 "hb", "db", "gb", "natureStd" 这四种参数')
-            platform = self.choice("选择你要搜索的平台", ["gb", "hb", "db", "natureStd"])
+        if platform not in {"hb", "db", "natureStd"}:
+            self.error('请输入正确的platform参数，支持 "hb", "db", "natureStd" 这四种参数')
+            platform = self.choice("选择你要搜索的平台", ["hb", "db", "natureStd"])
 
         if platform == "hb":
             std = HDB("hbba")
         elif platform == "db":
             std = HDB("dbba")
-        elif platform == "gb":
-            std = GB()
+            # elif platform == "gb":
+            #     std = GB()
         elif platform == "natureStd":
             std = NatureStd()
         else:

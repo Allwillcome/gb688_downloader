@@ -1,6 +1,7 @@
-# 描述
-这是一个中国国家标准、行业标准、地方标准、自然资源标准的下载工具  
-国家标准可以来自[国家标准全文系统](http://openstd.samr.gov.cn/bzgk/gb/index)
+# 介绍
+**gb688在改版后采用了加密，现已不支持下载。具体的讨论可以参考这个[issue](https://github.com/lzghzr/TampermonkeyJS/issues/27)**
+
+这是一个中国行业标准、地方标准、自然资源标准的下载工具
 行业标准、地方标准来自[全国标准信息公共服务平台](http://std.samr.gov.cn/)
 自然资源来自[自然资源标准化信息服务平台](http://www.nrsis.org.cn/portal/xxcx/std)  
 
@@ -27,13 +28,9 @@
     python std_cli.py search 养老
 
 # api 示例
-    from standard import GB, HDB, NatureStd
+    from standard import HDB, NatureStd
     
     if __name__ == '__main__':
-        gb = GB()
-        gb.search("养老")
-        gb.download('http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=D8AB02F0141FE11A4976E0E94FCF58B4')
-    
         hb = HDB('hbba')
         db = HDB('dbba')
         data = db.search('政务云工程评价指标体系及方法')
@@ -208,9 +205,6 @@
 | 消防救援                 	|
 | 减灾救灾与综合性应急管理 	|
 
-
-# 致谢
-国标的下载逻辑参考了[lzghzr](https://github.com/lzghzr/TampermonkeyJS/blob/master/GBdownload/GBdownload.user.js) 的油猴插件
 
 # 免责声明
 **本项目仅供学习交流之用，请勿用于非法用途。**
