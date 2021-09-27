@@ -176,7 +176,9 @@ class SearchCommand(Command):
         for index, stdItem in enumerate(data.data[start - 1 : end], 1):
             self.line(f"正在下载第{index}个标准")
             try:
-                std.download(stdItem.url, path=folder / f"{stdItem.name}.pdf")
+                rstr = r"[\/\\\:\*\?\"\<\>\|]"  # '/ \ : * ? " < > |'
+                saveName=re.sub(rstr, "：", stdItem.name) # 将不能作为文件名的字符替换为冒号
+                std.download(stdItem.url, path=folder / f"{saveName}.pdf")
             except DownloadError:
                 self.line(f"第{index}个文件下载失败，大概率是源文件不支持下载")
 
