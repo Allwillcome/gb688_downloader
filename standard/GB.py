@@ -1,40 +1,50 @@
 import base64
 import re
-import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union, List
 
 import requests
 from requests import Response
+from tenacity import retry, stop_after_attempt
+from tqdm import trange
 
-from .utils import filter_file
+from .errors import DownloadError
+from .models import GBModel, GBSearchModel
 
 
 class GBCore:
+    @retry(stop=stop_after_attempt(7))
+    def _get_bytes(self, hcno, i):
+        headers = {
+            "User-Agent": "Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1",
+        }
+        if i == 0:
+            url = f"http://c.gb688.cn/bzgk/gb/viewGb?type=online&hcno={hcno}"
+        else:
+            url = f"http://c.gb688.cn/bzgk/gb/viewGb?type=online&hcno={hcno}.00{i}"
+        return requests.get(url, headers=headers).text
+
     def get_bytes(self, hcno: str) -> bytes:
         """
         这部分代码可以在对 http://openstd.samr.gov.cn/bzgk/gb/index 网站的手机版预览模式下抓包获得
         :param hcno:
         :return:
         """
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1',
-        }
         text = ""
-        for i in range(0, 10):
-            if i == 0:
-                url = f"http://c.gb688.cn/bzgk/gb/viewGb?type=online&hcno={hcno}"
-            else:
-                url = f"http://c.gb688.cn/bzgk/gb/viewGb?type=online&hcno={hcno}.00{i}"
-            time.sleep(1)
-
-            text += requests.get(url, headers=headers).text
+        for i in trange(0, 10):
+            text += self._get_bytes(hcno, i)
         pdf_bytes = base64.standard_b64decode(text)
         return pdf_bytes
 
-    def _search(self, key: str, page: int = 1, size: int = 25, sort_name: str = 'circulation_date',
-                sort_type: str = 'desc') -> Response:
+    def _search(
+        self,
+        key: str,
+        page: int = 1,
+        size: int = 25,
+        sort_name: str = "circulation_date",
+        sort_type: str = "desc",
+    ) -> Response:
         """国标的下载
 
         :param key: 搜索内容
@@ -57,15 +67,21 @@ class GBCore:
             "p.p90": sort_name,  # 排序列
             "p.p91": sort_type,  # 正序还是倒序
             "p.p2": key,
-            'page': page,
-            'pageSize': size
+            "page": page,
+            "pageSize": size,
         }
 
         r = requests.get(url, params=params)
         return r
 
-    def search(self, key: str, page: int = 1, size: int = 25, sort_name: str = 'circulation_date',
-               sort_type: str = 'desc'):
+    def search(
+        self,
+        key: str,
+        page: int = 1,
+        size: int = 25,
+        sort_name: str = "circulation_date",
+        sort_type: str = "desc",
+    ) -> GBSearchModel:
         """国标的下载
 
         :param key: 搜索内容
@@ -86,37 +102,38 @@ class GBCore:
 
         total_size = int(re.findall(r'<span class="badge">(\d+)</span>', r.text)[0])
 
-        items = re.findall(r"<tr>([\s\S]*?)</tr>", r.text.replace('\r\n', '').replace('\t', ''))
-        records = []
+        items = re.findall(
+            r"<tr>([\s\S]*?)</tr>", r.text.replace("\r\n", "").replace("\t", "")
+        )
+        records: List[GBModel] = []
         for item in items[5:-2]:
             data = re.findall(r"<td([\s\S]*?)</td>", item)
-            records.append({
-                'hcno': re.findall(r"showInfo\('(.+?)'\);", data[1])[0],
-                'caibiao_status': data[2] if data[2] != ">  " else "不采标",
-                'standard_no': re.findall(r'\);">(.*?)</a>', data[1])[0],
-                'cn_name': re.findall(r'\);">(.*?)</a>', data[3])[0],
-                'standard_type': data[4].replace('>', ''),
-                'status': re.findall('[\u4e00-\u9fa5]{2,4}', data[5])[0],
-                'circulation_date': datetime.fromisoformat(data[6][:-2].replace(">", '')),
-                'implement_date': datetime.fromisoformat(data[7][:-2].replace(">", ''))
-            })
-        return {
-            'total_size': total_size,
-            'records': records
-        }
+            hcno = re.findall(r"showInfo\('(.+?)'\);", data[1])[0]
+            gb_model = GBModel(
+                url=f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={hcno}",
+                hcno=hcno,
+                caibiao_status=data[2] if data[2] != ">  " else "不采标",
+                name=re.findall(r'\);">(.*?)</a>', data[3])[0],
+                std_type=data[4].replace(">", ""),
+                code=re.findall(r'\);">(.*?)</a>', data[1])[0],
+                act_time=datetime.fromisoformat(data[7][:-2].replace(">", "")),
+                pub_time=datetime.fromisoformat(data[6][:-2].replace(">", "")),
+                status=re.findall("[\u4e00-\u9fa5]{2,4}", data[5])[0],
+            )
+            records.append(gb_model)
+        return GBSearchModel(total_size=total_size, data=records)
 
 
 class GB(GBCore):
     def __init__(self):
         super().__init__()
 
-    def save(self, hcno: str, path: Path, pdf_name: str):
+    def save(self, hcno: str, path: Union[Path, str]):
         pdf_bytes = self.get_bytes(hcno)
 
-        file_path = path / f"{pdf_name}"
-        with open(file_path, "wb") as f:
+        with open(path, "wb") as f:
             f.write(pdf_bytes)
-        return file_path
+        return path
 
     def get_hcno(self, url: str) -> str:
         """获取hcno
@@ -134,10 +151,9 @@ class GB(GBCore):
         :return:
         """
         r = requests.get(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={hcno}")
-        if "在线预览" in r.text:
-            return True
-        else:
-            return False
+        if "在线预览" not in r.text:
+            raise DownloadError("该文件无法下载")
+        return True
 
     def get_pdf_name(self, hcno: str) -> tuple:
         """获取pdf的名称
@@ -155,86 +171,35 @@ class GB(GBCore):
             raise Exception("未找到标准号和标准名称")
         return g_name[0], c_name[0]
 
-    def download(self, url: str, folder: Union[str, Path] = '', name: str = None):
-        """下载国标
+    def download(self, url: str, path: Union[Path, str]):
+        hcno = self.get_hcno(url)
 
-        :param name:
-        :param url:
-        :param folder:
-        :return:
-        """
-        try:
-            hcno = self.get_hcno(url)
-        except IndexError:
-            raise Exception("请关注您输入的网站是否包含hcno信息")
+        self.can_download(hcno)
 
-        if not self.can_download(hcno):
-            raise Exception("该文件源网页无法在线预览，故无法进行下载，请自行打开网页进行查询")
-
-        # 文件处理
-        folder = Path(folder)
-        try:
-            folder.mkdir(exist_ok=True)
-        except FileNotFoundError:
-            print("请查看该文件的父目录是否已经被创建")
-
-        if name is None:
-            g_name, c_name = self.get_pdf_name(hcno)
-            name = f"{g_name}({c_name}).pdf"
-
-        pdf_name = filter_file(name)
-
-        path = self.save(hcno, folder, pdf_name)
+        path = self.save(hcno, path)
         return path
 
-    # 说实话这个函数不该放到这个类中
-    def format_search_api(self, key: str, page: int = 1, size: int = 25, sort_name: str = 'circulation_date',
-                          sort_type: str = 'desc'):
-        data = self.search(key, page, size, sort_name, sort_type)
-        records = []
-        for record in data['records']:
-            d = {
-                'status': record['status'],
-                'key': record['hcno'],
-                'name': record['cn_name'],
-                'standard_no': record['standard_no'],
-                'act_date': record['implement_date'].timestamp() * 1000
-            }
-            records.append(d)
-        return {
-            'total_size': data['total_size'],
-            'records': records
-        }
 
-
-class GBTools(GB):
-    def __init__(self):
-        super().__init__()
-
-    def search_and_download(self, key: str, folder):
-        """搜索并进行下载
-
-        :param key: 关键词
-        :param folder: 保存文件夹
-        :return:
-        """
-
-        size = 10
-        records = self.search(key, page=1, size=10)
-        total_size = records['total_size']
-        error_record = []
-
-        if total_size == 0:
-            print("未找到相关标准")
-            exit()
-
-        print(f"共搜索到{total_size}项，开始下载")
-        for page in range(1, (total_size // size + 2)):
-            print(f"现在正在下载{page}页")
-            for record in records['records']:
-                try:
-                    self.download(f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}", folder)
-                except Exception as e:
-                    print(e)
-                    error_record.append(record)
-                    continue
+# TODO:加入 tutorial
+# size = 10
+# records = self.search(key, page=1, size=10)
+# total_size = records["total_size"]
+# error_record = []
+#
+# if total_size == 0:
+#     print("未找到相关标准")
+#     exit()
+#
+# print(f"共搜索到{total_size}项，开始下载")
+# for page in range(1, (total_size // size + 2)):
+#     print(f"现在正在下载{page}页")
+#     for record in records["records"]:
+#         try:
+#             self.download(
+#                 f"http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno={record['hcno']}",
+#                 folder,
+#             )
+#         except Exception as e:
+#             print(e)
+#             error_record.append(record)
+#             continue

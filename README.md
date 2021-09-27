@@ -1,32 +1,51 @@
-# 描述
-这是一个中国国家标准、行业标准、地方标准的下载工具  
-国家标准可以来自[国家标准全文系统](http://openstd.samr.gov.cn/bzgk/gb/index)
-行业标准、地方标准来自[全国标准信息公共服务平台](http://std.samr.gov.cn/)  
-国标的下载逻辑参考了[lzghzr](https://github.com/lzghzr/TampermonkeyJS/blob/master/GBdownload/GBdownload.user.js) 的油猴插件
+# 介绍
+**gb688在改版后采用了加密，现已不支持下载。具体的讨论可以参考这个[issue](https://github.com/lzghzr/TampermonkeyJS/issues/27)**
 
-# 示例
-    from standard import GB, HDB
+这是一个中国行业标准、地方标准、自然资源标准的下载工具
+行业标准、地方标准来自[全国标准信息公共服务平台](http://std.samr.gov.cn/)
+自然资源来自[自然资源标准化信息服务平台](http://www.nrsis.org.cn/portal/xxcx/std)  
 
+# 安装
+    git clone git@github.com:renmu123/gb688_downloader.git
+    cd gb688_downloader
+    poetry install # 如果没有安装 poerty，自行到官网进行安装
+
+# win cli 示例
+    # 去 releases (https://github.com/renmu123/gb688_downloader/releases) 下载最新命令行程序
+    std_cli.exe help # 查看教程
+    std_cli.exe download help  # 直接从页面下载
+    std_cli.exe search help  # 搜索下载
+
+# 源码 cli 示例
+    # 进入虚拟环境
+    poetry shell
+    # 下载标准
+    python std_cli.py download http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=8DE982AF0ED306A4033F37C219E6FCF3 城乡居民基本养老保险个人账户管理规范.pdf
+    # help
+    python std_cli.py help
+    
+    # 搜索内容，默认保存在当前文件夹
+    python std_cli.py search 养老
+
+# api 示例
+    from standard import HDB, NatureStd
+    
     if __name__ == '__main__':
-        gb = GB()
-        # 下载特定的国标
-        gb.download('http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=D8AB02F0141FE11A4976E0E94FCF58B4')
-        # 搜索并下载所有符合关键字的国标，默认下载
-        gb.search_and_download('养老')
-        
-        # hbba代表的是行标，dbba代表的是地标
         hb = HDB('hbba')
         db = HDB('dbba')
-        
-        # 搜索并下载符合关键字的第一个标准
         data = db.search('政务云工程评价指标体系及方法')
         first_record = data["records"][0]
         name = f'{first_record["code"]}({first_record["chName"]}'
         db.download(pk=first_record['pk'], name=name)
-        
-        # 搜索并下载符合关键字的所有地方标准
-        db.search_and_download("电子政务")
-        
+    
+        std = NatureStd()
+        std.search("")
+        std.download("http://www.nrsis.org.cn/portal/stdDetail/211166", "乡（镇）土地利用总体规划制图规范.pdf") #行标
+
+# 打包
+    # 下面的打包方法很有可能报错，解决方法参考这个 issue(https://github.com/jazzband/prettytable/issues/82)
+    pyinstaller -F std_cli.py
+
 ## 地标和行标中的一些参数
 ## 地方标准中的`ministry`代号
 
@@ -185,15 +204,6 @@
 | 认证认可                 	|
 | 消防救援                 	|
 | 减灾救灾与综合性应急管理 	|
-# TODO
-- [x] 支持行业标准、地方标准的下载
-- [x] 对 input 进行异常处理
-- [x] 对不提供下载的国标、行标、地标进行处理
-- [x] 搜索的时候支持翻页功能
-- [x] 将三者的搜索下载集合在一起
-- [x] 支持批量下载
-- [x] 重构
-- [x] 使用Tkinter构建GUI程序
 
 
 # 免责声明
