@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 from cleo import Application, Command
 from colorama import Fore, init
